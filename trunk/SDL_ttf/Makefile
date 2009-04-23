@@ -38,6 +38,11 @@ clean:
 install: $(TEST_DOLS)
 	@-mkdir -p dols
 	cp $(TEST_DOLS) dols
+	
+lib-install:
+	@mkdir -p $(DEVKITPRO)/libogc/include/SDL
+	@cp -frv $(LIB_DIR)/*.* $(DEVKITPRO)/libogc/lib/wii
+	@cp -frv include/*.* $(DEVKITPRO)/libogc/include/SDL
 
 # How to build a library.
 $(LIB_DIR)/libSDL_ttf.a: $(OBJS)

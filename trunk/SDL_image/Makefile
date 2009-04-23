@@ -33,6 +33,11 @@ all: $(LIB_DIR)/libSDL_image.a $(INCLUDE_DIR)/SDL_image.h install
 clean:
 	@echo Cleaning $(LIB_DIR)/libSDL_image.a $(OBJ_DIR)
 	@rm -f $(LIB_DIR)/libSDL_image.a $(OBJS) $(TEST_OBJS)
+	
+lib-install:
+	@mkdir -p $(DEVKITPRO)/libogc/include/SDL
+	@cp -frv $(LIB_DIR)/*.* $(DEVKITPRO)/libogc/lib/wii
+	@cp -frv include/*.* $(DEVKITPRO)/libogc/include/SDL
 
 # How to install to SD card ready for running.
 install: $(TEST_DOLS)

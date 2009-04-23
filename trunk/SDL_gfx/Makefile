@@ -30,6 +30,11 @@ $(LIB_DIR)/libSDL_gfx.a: $(OBJS)
 	@-mkdir -p $(dir $@)
 	@powerpc-gekko-ar crs $@ $(OBJS)
 	@echo ----
+	
+lib-install:
+	@mkdir -p $(DEVKITPRO)/libogc/include/SDL
+	@cp -frv $(LIB_DIR)/*.* $(DEVKITPRO)/libogc/lib/wii
+	@cp -frv include/*.* $(DEVKITPRO)/libogc/include/SDL
 
 # How to copy the header file
 headers: 
