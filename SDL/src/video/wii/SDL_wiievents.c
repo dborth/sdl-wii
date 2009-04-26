@@ -65,6 +65,7 @@ typedef struct
 static key_data_t key_data ATTRIBUTE_ALIGN(32);
 
 static u8 prev_keys[6];
+static u8 prev_modifiers;
 
 static key_data_t key_data1,key_data2;
 
@@ -83,7 +84,7 @@ typedef enum
 
 typedef struct _KeyboardEvent{
 	int type;
-	int modifiers;
+	int modifiers; /* actually, could as well scrap this. */
 	int scancode;
 } keyboardEvent;
 
@@ -171,25 +172,14 @@ s32 MOUSE_getEvent(mouseEvent* event)
 }
 
 
-
-SDLMod to_SDL_Modifiers(int km)
-{
-	SDLMod m = SDL_GetModState() & (KMOD_CAPS|KMOD_NUM);
-	if (km & 1) m |= KMOD_LCTRL;
-	if (km & 2) m |= KMOD_LSHIFT;
-	if (km & 4) m |= KMOD_LALT;
-	if (km & 8) m |= KMOD_LMETA;
-	if (km & 0x10) m |= KMOD_RCTRL;
-	if (km & 0x20) m |= KMOD_RSHIFT;	
-	if (km & 0x40) m |= KMOD_RALT;	
-	if (km & 0x80) m |= KMOD_RMETA;	
-	return m;
-}
-
+/* index = bit# from the Wii. value = SDL keycode. */
+static int modifier_keycodes[] = { SDLK_LCTRL, SDLK_LSHIFT, SDLK_LALT, SDLK_LMETA, SDLK_RCTRL, SDLK_RSHIFT, SDLK_RALT, SDLK_RMETA };
 
 s32 keyboard_callback(int ret,void * none)
 { 
 	int i, j;
+	SDLKey key;
+
 	if(keyboard_kb>=0) {
 		if(key_data.message!=0x7fffffff) {		
 			if(key_data.message==2)  {				
@@ -218,7 +208,24 @@ s32 keyboard_callback(int ret,void * none)
 						if (!found) KEYBOARD_addEvent(KEYBOARD_RELEASED, keymap[prev_keys[i]], key_data.modifiers);
 					}
 				}
+
+				if (prev_modifiers != key_data.modifiers) {
+					for(i = 0; i < sizeof(modifier_keycodes) / sizeof(modifier_keycodes[0]); ++i) {
+						key = modifier_keycodes[i];
+						j = 1 << i; /* bit mask for bit# i */
+
+						if ((key_data.modifiers & j) != 0 && (prev_modifiers & j) == 0) { /* newly pressed. */
+							KEYBOARD_addEvent(KEYBOARD_PRESSED, key, 0);
+						} else if ((key_data.modifiers & j) == 0 && (prev_modifiers & j) != 0) { /* newly released. */
+							KEYBOARD_addEvent(KEYBOARD_RELEASED, key, 0);
+						} else {
+							/* unchanged. */
+						}
+					}
+				}
+
 				memcpy(prev_keys, key_data.keys, 6);
+				prev_modifiers = key_data.modifiers;
 			} 
 
 
@@ -569,7 +576,12 @@ void PumpEvents()
 		memset(&keysym, 0, sizeof(keysym));
 		Uint8 keystate =  (ke.type==KEYBOARD_PRESSED)?SDL_PRESSED:SDL_RELEASED;
 		keysym.sym = ke.scancode;
-		SDL_SetModState(to_SDL_Modifiers(ke.modifiers));
+ 		keysym.mod = 0;
+                /* to_SDL_Modifiers(ke.modifiers); don't waste effort,
+                   SDL_PrivateKeyboard makes its own mind up about
+                   them from the press/release events of the modifier
+                   keys. */
+ 		/*don't do this either. SDL_SetModState(to_SDL_Modifiers(ke.modifiers));*/
 		posted += SDL_PrivateKeyboard(keystate, &keysym);       	
 	}
 
