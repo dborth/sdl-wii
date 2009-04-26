@@ -40,8 +40,6 @@ Uint8 lastButtonStateLeftMouse = SDL_RELEASED;
 Uint8 lastButtonStateRightMouse = SDL_RELEASED;
 
 
-Uint8 lastButtonStateHome = SDL_RELEASED;
-
 #define USB_CLASS_HID				0x03
 #define USB_SUBCLASS_BOOT			0x01
 #define USB_PROTOCOL_KEYBOARD			0x01
@@ -566,30 +564,7 @@ void PumpEvents()
 		posted += SDL_PrivateMouseButton(stateB, SDL_BUTTON_RIGHT, x, y);
 	}
 	
-	
-	Uint8 stateHome = SDL_RELEASED;
-	if(wd->btns_h & WPAD_BUTTON_HOME)
-	{
-		stateHome = SDL_PRESSED;
-	}
-	
-	if(stateHome != lastButtonStateHome)
-	{
-		lastButtonStateHome = stateHome;
-		/*
-		SDL_keysym keysym;
-		SDL_memset(&keysym, 0, (sizeof keysym));
-		keysym.sym = SDLK_ESCAPE;
-		SDL_PrivateKeyboard(stateHome, &keysym);*/
-		if (stateHome == SDL_RELEASED) {
-			SDL_Event event;
-			event.type = SDL_QUIT;
-			SDL_PushEvent(&event);
-		}
-
-	}
-
-	if (stat && (ke.type==KEYBOARD_RELEASED || ke.type==KEYBOARD_PRESSED) ) {
+        if (stat && (ke.type==KEYBOARD_RELEASED || ke.type==KEYBOARD_PRESSED) ) {
 		SDL_keysym keysym;
 		memset(&keysym, 0, sizeof(keysym));
 		Uint8 keystate =  (ke.type==KEYBOARD_PRESSED)?SDL_PRESSED:SDL_RELEASED;
