@@ -6,6 +6,8 @@ SRC_DIR			:= src
 INCLUDE_DIR		:= include
 TEST_OBJ_DIR		:= $(OBJ_DIR)/test
 TEST_SRC_DIR		:= src
+INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include/
+INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
 
 # Tools.
 PIPE_TO_SED := 2>&1 | sed "s/:\([0-9]*\):/\(\1\) :/"
@@ -41,9 +43,10 @@ clean:
 	@rm -f $(LIB_DIR)/libSDL_mixer.a $(OBJS) $(TEST_OBJS)
 	
 lib-install:
-	@mkdir -p $(DEVKITPRO)/libogc/include/SDL
-	@cp -frv $(LIB_DIR)/*.* $(DEVKITPRO)/libogc/lib/wii
-	@cp -frv include/*.* $(DEVKITPRO)/libogc/include/SDL
+	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
+	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
+	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
+	@cp -frv include/*.* $(INSTALL_HEADER_DIR)/SDL
 
 # How to build a library.
 $(LIB_DIR)/libSDL_mixer.a: $(OBJS)
