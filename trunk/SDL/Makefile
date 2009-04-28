@@ -15,7 +15,7 @@ LIB_DIR			:= lib
 BIN_DIR			:= bin/wii
 SDL_OBJ_DIR		:= $(OBJ_DIR)/sdl
 SDL_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include/
+INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
 INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
 
 # Tools.

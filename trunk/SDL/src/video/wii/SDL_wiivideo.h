@@ -16,8 +16,7 @@
     License along with this library; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
-    Sam Lantinga
-    slouken@libsdl.org
+    Tantric, 2009
 */
 #include "SDL_config.h"
 
@@ -33,37 +32,15 @@
 /* Hidden "this" pointer for the video functions */
 #define _THIS	SDL_VideoDevice *this
 
-/* The Wii uses this frame buffer format */
-typedef Uint32 Wii_Y1CBY2CR;
-
-/* A single palette entry */
-typedef struct Wii_YCBCR
-{
-	Uint8 y;
-	Uint8 cb;
-	Uint8 cr;
-} Wii_YCBCR;
-
-/* Types */
-typedef Wii_YCBCR Wii_Palette[256];
-typedef struct { Wii_Y1CBY2CR entries[256][256]; } Wii_PackedPalette;
-typedef void (WII_UpdateRowFn)(const void*, const void*, Wii_Y1CBY2CR*, const Wii_PackedPalette*);
-
 /* Private display data */
 struct SDL_PrivateVideoData
 {
-	Uint8*					back_buffer;
-	Uint32*					tmp_buffer;
-	Wii_Palette		palette;
-	Wii_PackedPalette	packed_palette;
-	WII_UpdateRowFn*	update_row;
-	unsigned int			magnification;
+	Uint8*					buffer;
+	int						width;
+	int						height;
+	int						pitch;
 };
 
-/* Globals */
-extern GXRModeObj*			display_mode;
-extern Wii_Y1CBY2CR	(*frame_buffer)[][320];
-extern Wii_Y1CBY2CR	(*frame_buffer1)[][320];
-extern Wii_Y1CBY2CR	(*frame_buffer2)[][320];
+void WII_InitVideoSystem();
 
 #endif /* _SDL_wiivideo_h */
