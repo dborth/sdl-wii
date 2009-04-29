@@ -87,6 +87,8 @@ static int __jspad_enabled = 1;
 static int __numwiijoysticks = 4;
 static int __numgcjoysticks = 4;
 
+static int __scan_pads_callback_set = 0;
+
 /* Function to scan the system for joysticks.
  * This function should set SDL_numjoysticks to the number of available
  * joysticks.  Joystick 0 should be the system default joystick.
@@ -108,6 +110,14 @@ const char *SDL_SYS_JoystickName(int index)
 	else if((index < 8) && (__jspad_enabled) && (index < (__numgcjoysticks + 4)) && (index> 3))
 	sprintf(joy_name, "Gamecube %d", index);
 	return (const char *)joy_name;
+}
+
+
+static void
+UpdatePadsCB()
+{
+	WPAD_ScanPads();
+	PAD_ScanPads();
 }
 
 /* Function to open a joystick for use.
@@ -147,6 +157,11 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 			joystick->nhats = MAX_GC_HATS;
 		}
 	}
+
+	/* Update pads at vertical retrace */
+	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
+	__scan_pads_callback_set++;
+
 	return(0);
 }
 
@@ -381,6 +396,11 @@ void SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 {
 	if (joystick->hwdata != NULL)
 		SDL_free(joystick->hwdata);
+
+	/* Clear callback again */
+	__scan_pads_callback_set--;
+	if ( __scan_pads_callback_set == 0 )
+		VIDEO_SetPostRetraceCallback (NULL);
 }
 
 /* Function to perform any system-specific joystick related cleanup */
