@@ -402,9 +402,8 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 	GX_LoadTexObj(&texobj, GX_TEXMAP0);
 
 	draw_square(view); // render textured quad
-	GX_DrawDone ();
 	GX_CopyDisp(xfb[whichfb], GX_TRUE);
-	GX_Flush();
+	GX_DrawDone ();
 	VIDEO_SetNextFramebuffer(xfb[whichfb]);
 	VIDEO_Flush();
 
