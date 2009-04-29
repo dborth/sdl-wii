@@ -19,11 +19,9 @@ extern void wii_mouse_init();
 /* Entry point */
 int main(int argc, char *argv[])
 {
-	WII_InitVideoSystem();
-
 	WPAD_Init();
 	PAD_Init();
-
+	WII_InitVideoSystem();
 	WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
 	WPAD_SetVRes(0, 640, 480);
 

@@ -31,86 +31,103 @@
 #include "../SDL_audio_c.h"
 
 // Wii audio internal includes.
+#include <ogcsys.h>
 #include <ogc/audio.h>
 #include <ogc/cache.h>
 #include "SDL_wiiaudio.h"
 
-#define ALIGNED(x) __attribute__((aligned(x)));
 #define SAMPLES_PER_DMA_BUFFER 2048
 
-typedef Uint32 Sample;
-typedef Sample DMABuffer[SAMPLES_PER_DMA_BUFFER*2];
+static const char WIIAUD_DRIVER_NAME[] = "wii";
+static Uint32 dma_buffers[2][SAMPLES_PER_DMA_BUFFER] __attribute__((aligned(32)));
+static Uint8 whichab = 0;
 
-static const char	WIIAUD_DRIVER_NAME[] = "wii";
-static DMABuffer	dma_buffers[2] ALIGNED(32);
-static Uint8		current_dma_buffer = 0;
+#define AUDIOSTACK 16384
+static lwpq_t audioqueue;
+static lwp_t athread;
+static Uint8 astack[AUDIOSTACK];
 
-// Called whenever more audio data is required.
-static void StartDMA(void)
+/****************************************************************************
+ * Audio Threading
+ ***************************************************************************/
+static void *
+AudioThread (void *arg)
 {
-	memset(dma_buffers[current_dma_buffer], 0, sizeof(DMABuffer));
+	LWP_InitQueue (&audioqueue);
 
-	// Is the device ready?
-	if (current_audio && (!current_audio->paused))
+	while (1)
 	{
-		// Is conversion required?
-		if (current_audio->convert.needed)
+		whichab ^= 1;
+		memset(dma_buffers[whichab], 0, SAMPLES_PER_DMA_BUFFER);
+
+		// Is the device ready?
+		if (current_audio && (!current_audio->paused))
 		{
-			// Dump out the conversion info.
-			// printf("----\n");
-			// printf("conversion is needed\n");
-			// printf("\tsrc_format = 0x%x\n", current_audio->convert.src_format);
-			// printf("\tdst_format = 0x%x\n", current_audio->convert.dst_format);
-			// printf("\trate_incr  = %f\n", (float) current_audio->convert.rate_incr);
-			// printf("\tbuf        = 0x%08x\n", current_audio->convert.buf);
-			// printf("\tlen        = %d\n", current_audio->convert.len);
-			// printf("\tlen_cvt    = %d\n", current_audio->convert.len_cvt);
-			// printf("\tlen_mult   = %d\n", current_audio->convert.len_mult);
-			// printf("\tlen_ratio  = %f\n", (float) current_audio->convert.len_ratio);
-
-			SDL_mutexP(current_audio->mixer_lock);
-			// Get the client to produce audio.
-			current_audio->spec.callback(
-				current_audio->spec.userdata,
-				current_audio->convert.buf,
-				current_audio->convert.len);
-			SDL_mutexV(current_audio->mixer_lock);
-
-			// Convert the audio.
-			SDL_ConvertAudio(&current_audio->convert);
-
-			// Sanity check.
-			if (sizeof(DMABuffer) != current_audio->convert.len_cvt)
+			// Is conversion required?
+			if (current_audio->convert.needed)
 			{
-					//printf("The size of the DMA buffer (%u) doesn't match the converted buffer (%u)\n",
-					//sizeof(DMABuffer), current_audio->convert.len_cvt);
-			}
+				// Dump out the conversion info.
+				// printf("----\n");
+				// printf("conversion is needed\n");
+				// printf("\tsrc_format = 0x%x\n", current_audio->convert.src_format);
+				// printf("\tdst_format = 0x%x\n", current_audio->convert.dst_format);
+				// printf("\trate_incr  = %f\n", (float) current_audio->convert.rate_incr);
+				// printf("\tbuf        = 0x%08x\n", current_audio->convert.buf);
+				// printf("\tlen        = %d\n", current_audio->convert.len);
+				// printf("\tlen_cvt    = %d\n", current_audio->convert.len_cvt);
+				// printf("\tlen_mult   = %d\n", current_audio->convert.len_mult);
+				// printf("\tlen_ratio  = %f\n", (float) current_audio->convert.len_ratio);
 
-			// Copy from SDL buffer to DMA buffer.
-			memcpy(dma_buffers[current_dma_buffer], current_audio->convert.buf, current_audio->convert.len_cvt);
+				//SDL_mutexP(current_audio->mixer_lock);
+				// Get the client to produce audio.
+				current_audio->spec.callback(
+					current_audio->spec.userdata,
+					current_audio->convert.buf,
+					current_audio->convert.len);
+				//SDL_mutexV(current_audio->mixer_lock);
+
+				// Convert the audio.
+				SDL_ConvertAudio(&current_audio->convert);
+
+				// Sanity check.
+				//if (sizeof(DMABuffer) != current_audio->convert.len_cvt)
+				//{
+						//printf("The size of the DMA buffer (%u) doesn't match the converted buffer (%u)\n",
+						//sizeof(DMABuffer), current_audio->convert.len_cvt);
+				//}
+
+				// Copy from SDL buffer to DMA buffer.
+				memcpy(dma_buffers[whichab], current_audio->convert.buf, current_audio->convert.len_cvt);
+			}
+			else
+			{
+				//printf("conversion is not needed\n");
+				//SDL_mutexP(current_audio->mixer_lock);
+				current_audio->spec.callback(
+					current_audio->spec.userdata,
+					(Uint8 *)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
+				//SDL_mutexV(current_audio->mixer_lock);
+			}
 		}
-		else
-		{
-			//printf("conversion is not needed\n");
-			SDL_mutexP(current_audio->mixer_lock);
-			current_audio->spec.callback(
-				current_audio->spec.userdata,
-				(Uint8 *)dma_buffers[current_dma_buffer], SAMPLES_PER_DMA_BUFFER);
-			SDL_mutexV(current_audio->mixer_lock);
-		}
+		LWP_ThreadSleep (audioqueue);
 	}
 
-	// Flush the data cache.
-	DCFlushRange(dma_buffers[current_dma_buffer], SAMPLES_PER_DMA_BUFFER);
+	return NULL;
+}
 
-	// Set up the DMA.
-	AUDIO_InitDMA((Uint32)dma_buffers[current_dma_buffer], SAMPLES_PER_DMA_BUFFER);
+/****************************************************************************
+ * MixSamples
+ * This continually calls S9xMixSamples On each DMA Completion
+ ***************************************************************************/
+static void
+DMACallback()
+{
+	AUDIO_StopDMA ();
+	DCFlushRange (dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
+	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
+	AUDIO_StartDMA ();
 
-	// Start the DMA.
-	AUDIO_StartDMA();
-
-	// Use the other DMA buffer next time.
-	current_dma_buffer ^= 1;
+	LWP_ThreadSignal (audioqueue);
 }
 
 static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
@@ -126,10 +143,16 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	// Initialise the Wii side of the audio system.
 	AUDIO_Init(0);
 	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-	AUDIO_RegisterDMACallback(StartDMA);
+	AUDIO_RegisterDMACallback(DMACallback);
 
-	// Start the first chunk of audio playing.
-	StartDMA();
+	memset(dma_buffers[0], 0, SAMPLES_PER_DMA_BUFFER);
+	memset(dma_buffers[1], 0, SAMPLES_PER_DMA_BUFFER);
+
+	// startup conversion thread
+	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 65);
+
+	// Start the first chunk of audio playing
+	DMACallback();
 
 	return 1;
 }
@@ -141,8 +164,7 @@ void static WIIAUD_WaitAudio(_THIS)
 
 static void WIIAUD_PlayAudio(_THIS)
 {
-	if (this->paused)
-		return;
+
 }
 
 static Uint8 *WIIAUD_GetAudioBuf(_THIS)
@@ -152,11 +174,14 @@ static Uint8 *WIIAUD_GetAudioBuf(_THIS)
 
 static void WIIAUD_CloseAudio(_THIS)
 {
-	// Forget the DMA callback.
+	// Forget the DMA callback
 	AUDIO_RegisterDMACallback(0);
 
-	// Stop any DMA going on.
+	// Stop any DMA going on
 	AUDIO_StopDMA();
+
+	// terminate conversion thread
+	LWP_ThreadSignal(audioqueue);
 }
 
 static void WIIAUD_DeleteDevice(SDL_AudioDevice *device)
