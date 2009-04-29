@@ -349,7 +349,44 @@ static void WII_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
-static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
+static void flipHWSurface_8_16(_THIS, SDL_Surface *surface)
+{
+	Uint16 *dst = (Uint16 *) texturemem;
+	Uint8 *src1 = (Uint8 *) this->hidden->buffer;
+	Uint8 *src2 = (Uint8 *) (this->hidden->buffer + this->hidden->pitch);
+	Uint8 *src3 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 2));
+	Uint8 *src4 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 3));
+	char *ra = NULL;
+	int rowpitch = this->hidden->pitch;
+	int h, w;
+
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < (this->hidden->width >> 2); w++)
+		{
+			int i;
+
+			for (i = 0; i < 4; i++)
+				*dst++ = this->hidden->palette[*src1++];
+
+			for (i = 0; i < 4; i++)
+				*dst++ = this->hidden->palette[*src2++];
+
+			for (i = 0; i < 4; i++)
+				*dst++ = this->hidden->palette[*src3++];
+
+			for (i = 0; i < 4; i++)
+				*dst++ = this->hidden->palette[*src4++];
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+	}
+}
+
+static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 {
 	int h, w;
 	long long int *dst = (long long int *) texturemem;
@@ -360,12 +397,6 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 	int rowpitch = (this->hidden->pitch >> 3) * 3;
 	int rowadjust = (this->hidden->pitch % 8) * 4;
 	char *ra = NULL;
-
-	whichfb ^= 1;
-
-	// clear texture objects
-	GX_InvVtxCache();
-	GX_InvalidateTexAll();
 
 	for (h = 0; h < this->hidden->height; h += 4)
 	{
@@ -395,6 +426,25 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 		}
 	}
 
+	return(1);
+}
+
+
+static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
+{
+	whichfb ^= 1;
+
+	// clear texture objects
+	GX_InvVtxCache();
+	GX_InvalidateTexAll();
+
+	if (surface->format->BytesPerPixel == 1)
+		flipHWSurface_8_16(this, surface);
+	else if (surface->format->BytesPerPixel == 2)
+		flipHWSurface_16_16(this, surface);
+	else
+		return -1;
+
 	// load texture into GX
 	DCFlushRange(texturemem, TEXTUREMEM_SIZE);
 
@@ -417,7 +467,24 @@ static void WII_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 
 int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 {
-	return(0);
+	const int last_color = first_color + color_count;
+	Wii_Palette* const palette = &this->hidden->palette;
+	int     component;
+	int     left;
+	int     right;
+
+	/* Build the RGB565 palette. */
+	for (component = first_color; component != last_color; ++component)
+	{
+		const SDL_Color* const in = &colors[component - first_color];
+		const unsigned int r    = in->r;
+		const unsigned int g    = in->g;
+		const unsigned int b    = in->b;
+
+		(*palette)[component] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+	}
+
+	return(1);
 }
 
 void WII_VideoQuit(_THIS)
