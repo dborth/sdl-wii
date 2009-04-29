@@ -186,6 +186,12 @@ static void WIIAUD_CloseAudio(_THIS)
 
 static void WIIAUD_DeleteDevice(SDL_AudioDevice *device)
 {
+	// Forget the DMA callback
+	AUDIO_RegisterDMACallback(0);
+
+	// Stop any DMA going on
+	AUDIO_StopDMA();
+
 	SDL_free(device->hidden);
 	SDL_free(device);
 }

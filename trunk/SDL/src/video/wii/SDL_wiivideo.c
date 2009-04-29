@@ -223,7 +223,7 @@ WII_InitVideoSystem()
 	GX_SetZMode (GX_TRUE, GX_LEQUAL, GX_TRUE);
 	GX_SetColorUpdate (GX_TRUE);
 
-	guOrtho(p, display_mode->efbHeight/2, -(display_mode->efbHeight/2), -(display_mode->fbWidth/2), display_mode->fbWidth/2, 100, 1000);	// matrix, t, b, l, r, n, f
+	guOrtho(p, 480/2, -(480/2), -(640/2), 640/2, 100, 1000); // matrix, t, b, l, r, n, f
 	GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
 }
 
@@ -262,11 +262,11 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	Uint32			b_mask = 0;
 	Uint32			g_mask = 0;
 
-	/* Find a mode big enough to store the requested resolution */
+	// Find a mode big enough to store the requested resolution
 	mode = modes_descending[0];
 	while (mode)
 	{
-		if ((mode->w >= width) && (mode->h >= height))
+		if (mode->w == width && mode->h == height)
 			break;
 		else
 			++mode;
@@ -275,8 +275,15 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	// Didn't find a mode?
 	if (!mode)
 	{
-		SDL_SetError("Display mode (%dx%d) is too large to fit on the screen",
+		SDL_SetError("Display mode (%dx%d) is unsupported.",
 			width, height);
+		return NULL;
+	}
+
+	if(bpp != 8 && bpp != 16)
+	{
+		SDL_SetError("Resolution (%d bpp) is unsupported (8 or 16 bpp only).",
+			bpp);
 		return NULL;
 	}
 
@@ -356,7 +363,6 @@ static void flipHWSurface_8_16(_THIS, SDL_Surface *surface)
 	Uint8 *src2 = (Uint8 *) (this->hidden->buffer + this->hidden->pitch);
 	Uint8 *src3 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 2));
 	Uint8 *src4 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 3));
-	char *ra = NULL;
 	int rowpitch = this->hidden->pitch;
 	int h, w;
 
@@ -425,8 +431,6 @@ static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 			src4 = (long long int *)(ra + rowadjust);
 		}
 	}
-
-	return(1);
 }
 
 
@@ -470,8 +474,6 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 	const int last_color = first_color + color_count;
 	Wii_Palette* const palette = &this->hidden->palette;
 	int     component;
-	int     left;
-	int     right;
 
 	/* Build the RGB565 palette. */
 	for (component = first_color; component != last_color; ++component)
