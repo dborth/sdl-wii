@@ -32,6 +32,7 @@
 #include <ogcsys.h>
 #include <malloc.h>
 #include <ogc/texconv.h>
+#include <wiiuse/wpad.h>
 #include "SDL_wiivideo.h"
 #include "SDL_wiievents_c.h"
 
@@ -163,6 +164,13 @@ draw_square (Mtx v)
 	GX_End ();
 }
 
+static void
+UpdatePadsCB()
+{
+	WPAD_ScanPads();
+	PAD_ScanPads();
+}
+
 void
 WII_InitVideoSystem()
 {
@@ -185,6 +193,9 @@ WII_InitVideoSystem()
 	VIDEO_ClearFrameBuffer(display_mode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(display_mode, xfb[1], COLOR_BLACK);
 	VIDEO_SetNextFramebuffer (xfb[0]);
+
+	// video callbacks
+	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
 
 	// Show the screen.
 	VIDEO_SetBlack(FALSE);
