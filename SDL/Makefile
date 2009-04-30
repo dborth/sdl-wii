@@ -87,7 +87,7 @@ $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 # Compilation flags.
 COMMON_FLAGS	:= -g -O2 -mrvl -Wall -mcpu=750 -meabi -mhard-float $(MACHDEP) 
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include
-DEFINES			:= -DGEKKO -DSDL_AUDIO_DRIVER_WII
+DEFINES			:= -DGEKKO
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
