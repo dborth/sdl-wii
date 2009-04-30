@@ -159,11 +159,8 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 	}
 
 	/* Update pads at vertical retrace */
-	if(!__scan_pads_callback_set)
-	{
-		VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
-		__scan_pads_callback_set++;
-	}
+	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
+	__scan_pads_callback_set++;
 
 	return(0);
 }
