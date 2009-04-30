@@ -88,11 +88,10 @@ typedef unsigned int uintptr_t;
 #define HAVE_SETJMP	1
 
 /* Supported audio drivers. */
-/* #define SDL_AUDIO_DRIVER_WII	1 */
-#define SDL_AUDIO_DRIVER_DUMMY		1
+#define SDL_AUDIO_DRIVER_WII	1
 
 /* Enable the stub cdrom driver (src/cdrom/dummy/\*.c) */
-#define SDL_CDROM_DISABLED	1
+#define SDL_CDROM_DUMMY	1
 
 /* Enable the wii joystick driver */
 #define SDL_JOYSTICK_WII	1
@@ -102,10 +101,8 @@ typedef unsigned int uintptr_t;
 
 /* Enable thread support */
 #define SDL_THREAD_WII	1
-/*#define SDL_THREADS_DISABLED	*/
 
 /* Supported video drivers. */
 #define SDL_VIDEO_DRIVER_WII	1
-#define SDL_VIDEO_DRIVER_DUMMY		1
 
 #endif /* _SDL_config_minimal_h */

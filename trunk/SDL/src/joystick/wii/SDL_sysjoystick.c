@@ -87,17 +87,16 @@ static int __jspad_enabled = 1;
 static int __numwiijoysticks = 4;
 static int __numgcjoysticks = 4;
 
-static int __scan_pads_callback_set = 0;
+static int __num_joysticks_open = 0;
 
 /* Function to scan the system for joysticks.
- * This function should set SDL_numjoysticks to the number of available
+ * This function should return the number of available
  * joysticks.  Joystick 0 should be the system default joystick.
- * It should return 0, or -1 on an unrecoverable fatal error.
+ * It should return -1 on an unrecoverable fatal error.
  */
 int SDL_SYS_JoystickInit(void)
 {
-	SDL_numjoysticks = 8;
-	return 0;
+	return 8;
 }
 
 static char joy_name[] = "Gamecube 0";
@@ -159,8 +158,9 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 	}
 
 	/* Update pads at vertical retrace */
-	VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
-	__scan_pads_callback_set++;
+	if(__num_joysticks_open == 0)
+		VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
+	__num_joysticks_open++;
 
 	return(0);
 }
@@ -398,8 +398,8 @@ void SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 		SDL_free(joystick->hwdata);
 
 	/* Clear callback again */
-	__scan_pads_callback_set--;
-	if ( __scan_pads_callback_set == 0 )
+	__num_joysticks_open--;
+	if (__num_joysticks_open == 0)
 		VIDEO_SetPostRetraceCallback (NULL);
 }
 

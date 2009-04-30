@@ -140,11 +140,6 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	spec->padding	= 0;
 	SDL_CalculateAudioSpec(spec);
 
-	// Initialise the Wii side of the audio system.
-	AUDIO_Init(0);
-	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-	AUDIO_RegisterDMACallback(DMACallback);
-
 	memset(dma_buffers[0], 0, SAMPLES_PER_DMA_BUFFER);
 	memset(dma_buffers[1], 0, SAMPLES_PER_DMA_BUFFER);
 
@@ -174,9 +169,6 @@ static Uint8 *WIIAUD_GetAudioBuf(_THIS)
 
 static void WIIAUD_CloseAudio(_THIS)
 {
-	// Forget the DMA callback
-	AUDIO_RegisterDMACallback(0);
-
 	// Stop any DMA going on
 	AUDIO_StopDMA();
 
@@ -191,6 +183,9 @@ static void WIIAUD_DeleteDevice(SDL_AudioDevice *device)
 
 	// Stop any DMA going on
 	AUDIO_StopDMA();
+
+	// terminate conversion thread
+	LWP_ThreadSignal(audioqueue);
 
 	SDL_free(device->hidden);
 	SDL_free(device);
@@ -215,6 +210,11 @@ static SDL_AudioDevice *WIIAUD_CreateDevice(int devindex)
 		return(0);
 	}
 	SDL_memset(this->hidden, 0, (sizeof *this->hidden));
+
+	// Initialise the Wii side of the audio system
+	AUDIO_Init(0);
+	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
+	AUDIO_RegisterDMACallback(DMACallback);
 
 	/* Set the function pointers */
 	this->OpenAudio = WIIAUD_OpenAudio;
