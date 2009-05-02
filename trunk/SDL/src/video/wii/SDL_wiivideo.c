@@ -280,7 +280,7 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 		return NULL;
 	}
 
-	if(bpp != 8 && bpp != 16)
+	if(bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32)
 	{
 		SDL_SetError("Resolution (%d bpp) is unsupported (8 or 16 bpp only).",
 			bpp);
@@ -433,6 +433,78 @@ static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 	}
 }
 
+static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
+
+static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
+{
+
+	int new_pitch = this->hidden->width * 2;
+	long long int *dst = (long long int *) texturemem;
+	long long int *src1 = (long long int *) textureconvert;
+	long long int *src2 = (long long int *) (textureconvert + new_pitch);
+	long long int *src3 = (long long int *) (textureconvert + (new_pitch * 2));
+	long long int *src4 = (long long int *) (textureconvert + (new_pitch * 3));
+	int rowpitch = (new_pitch >> 3) * 3;
+	int rowadjust = (new_pitch % 8) * 4;
+	char *ra = NULL;
+	int h, w;
+	Uint8 r,g,b;
+
+	// crude convert
+	Uint16 * ptr_cv = (Uint16 *) textureconvert;
+	Uint8 *ptr = (Uint8 *)this->hidden->buffer;
+
+	for (h = 0; h < this->hidden->height; h++)
+	{
+		for (w = 0; w < this->hidden->width; w++)
+		{
+
+			r = *ptr++;
+			g = *ptr++;
+			b = *ptr++;
+	
+			*ptr_cv++ = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+		}
+	}
+
+
+	// same as 16bit
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < (this->hidden->width >> 2); w++)
+		{
+			*dst++ = *src1++;
+			*dst++ = *src2++;
+			*dst++ = *src3++;
+			*dst++ = *src4++;
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+
+		if ( rowadjust )
+		{
+			ra = (char *)src1;
+			src1 = (long long int *)(ra + rowadjust);
+			ra = (char *)src2;
+			src2 = (long long int *)(ra + rowadjust);
+			ra = (char *)src3;
+			src3 = (long long int *)(ra + rowadjust);
+			ra = (char *)src4;
+			src4 = (long long int *)(ra + rowadjust);
+		}
+	}
+}
+
+// TO DO
+static void flipHWSurface_32_16(_THIS, SDL_Surface *surface)
+{
+
+
+}
+
 
 static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 {
@@ -446,6 +518,10 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 		flipHWSurface_8_16(this, surface);
 	else if (surface->format->BytesPerPixel == 2)
 		flipHWSurface_16_16(this, surface);
+	else if (surface->format->BytesPerPixel == 3)
+		flipHWSurface_24_16(this, surface);
+	else if (surface->format->BytesPerPixel == 4)
+		flipHWSurface_32_16(this, surface);
 	else
 		return -1;
 
