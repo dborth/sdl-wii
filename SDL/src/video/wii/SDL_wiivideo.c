@@ -536,16 +536,19 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 	GX_InvVtxCache();
 	GX_InvalidateTexAll();
 
-	if (surface->format->BytesPerPixel == 1)
-		flipHWSurface_8_16(this, surface);
-	else if (surface->format->BytesPerPixel == 2)
-		flipHWSurface_16_16(this, surface);
-	else if (surface->format->BytesPerPixel == 3)
-		flipHWSurface_24_16(this, surface);
-	else if (surface->format->BytesPerPixel == 4)
-		flipHWSurface_32_16(this, surface);
-	else
+	switch(surface->format->BytesPerPixel)
+	{
+	case 1:
+		flipHWSurface_8_16(this, surface); break;
+	case 2:
+		flipHWSurface_16_16(this, surface); break;
+	case 3:
+		flipHWSurface_24_16(this, surface); break;
+	case 4:
+		flipHWSurface_32_16(this, surface); break;
+	default:
 		return -1;
+	}
 
 	// load texture into GX
 	DCFlushRange(texturemem, TEXTUREMEM_SIZE);
