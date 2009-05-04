@@ -577,11 +577,11 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 	for (component = first_color; component != last_color; ++component)
 	{
 		const SDL_Color* const in = &colors[component - first_color];
-		const unsigned int r    = in->r;
-		const unsigned int g    = in->g;
-		const unsigned int b    = in->b;
+		const unsigned int r    = (in->r >> 3) & 0x1f;
+		const unsigned int g    = (in->g >> 2) & 0x3f;
+		const unsigned int b    = (in->b >> 3) & 0x1f;
 
-		palette[component] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+		palette[component] = (r << 11) | (g << 5) | b;
 	}
 
 	return(1);
