@@ -32,9 +32,6 @@
 /* Hidden "this" pointer for the video functions */
 #define _THIS	SDL_VideoDevice *this
 
-/* Types */
-typedef Uint16 Wii_Palette[256];
-
 /* Private display data */
 struct SDL_PrivateVideoData
 {
@@ -43,7 +40,7 @@ struct SDL_PrivateVideoData
 	int						height;
 	int						pitch;
 
-	Wii_Palette             palette;
+	Uint16             palette[256];
 };
 
 void WII_InitVideoSystem();
