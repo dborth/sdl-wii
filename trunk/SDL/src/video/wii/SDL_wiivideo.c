@@ -58,6 +58,7 @@ static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int whichfb = 0; // Switch
 static GXRModeObj* display_mode = 0;
 static unsigned char texturemem[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // GX texture
+static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
 
 /*** GX ***/
 #define DEFAULT_FIFO_SIZE 256 * 1024
@@ -358,52 +359,34 @@ static void WII_UnlockHWSurface(_THIS, SDL_Surface *surface)
 
 static void flipHWSurface_8_16(_THIS, SDL_Surface *surface)
 {
-	Uint16 *dst = (Uint16 *) texturemem;
-	Uint8 *src1 = (Uint8 *) this->hidden->buffer;
-	Uint8 *src2 = (Uint8 *) (this->hidden->buffer + this->hidden->pitch);
-	Uint8 *src3 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 2));
-	Uint8 *src4 = (Uint8 *) (this->hidden->buffer + (this->hidden->pitch * 3));
-	int rowpitch = this->hidden->pitch;
-	int h, w;
-
-	for (h = 0; h < this->hidden->height; h += 4)
-	{
-		for (w = 0; w < (this->hidden->width >> 2); w++)
-		{
-			int i;
-
-			for (i = 0; i < 4; i++)
-				*dst++ = this->hidden->palette[*src1++];
-
-			for (i = 0; i < 4; i++)
-				*dst++ = this->hidden->palette[*src2++];
-
-			for (i = 0; i < 4; i++)
-				*dst++ = this->hidden->palette[*src3++];
-
-			for (i = 0; i < 4; i++)
-				*dst++ = this->hidden->palette[*src4++];
-		}
-
-		src1 += rowpitch;
-		src2 += rowpitch;
-		src3 += rowpitch;
-		src4 += rowpitch;
-	}
-}
-
-static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
-{
-	int h, w;
+	int new_pitch = this->hidden->width * 2;
 	long long int *dst = (long long int *) texturemem;
-	long long int *src1 = (long long int *) this->hidden->buffer;
-	long long int *src2 = (long long int *) (this->hidden->buffer + this->hidden->pitch);
-	long long int *src3 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 2));
-	long long int *src4 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 3));
-	int rowpitch = (this->hidden->pitch >> 3) * 3;
-	int rowadjust = (this->hidden->pitch % 8) * 4;
+	long long int *src1 = (long long int *) textureconvert;
+	long long int *src2 = (long long int *) (textureconvert + new_pitch);
+	long long int *src3 = (long long int *) (textureconvert + (new_pitch * 2));
+	long long int *src4 = (long long int *) (textureconvert + (new_pitch * 3));
+	int rowpitch = (new_pitch >> 3) * 3;
+	int rowadjust = (new_pitch % 8) * 4;
+	Uint16 *palette = this->hidden->palette;
 	char *ra = NULL;
+	int h, w;
 
+	// crude convert
+	Uint16 * ptr_cv = (Uint16 *) textureconvert;
+	Uint8 *ptr = (Uint8 *)this->hidden->buffer;
+
+	for (h = 0; h < this->hidden->height; h++)
+	{
+		for (w = 0; w < this->hidden->width; w++)
+		{
+			Uint16 v = palette[*ptr];
+	
+			*ptr_cv++ = v;
+			ptr++;
+		}
+	}
+
+	// same as 16bit
 	for (h = 0; h < this->hidden->height; h += 4)
 	{
 		for (w = 0; w < (this->hidden->width >> 2); w++)
@@ -433,7 +416,46 @@ static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 	}
 }
 
-static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
+static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
+{
+	int h, w;
+	long long int *dst = (long long int *) texturemem;
+	long long int *src1 = (long long int *) this->hidden->buffer;
+	long long int *src2 = (long long int *) (this->hidden->buffer + this->hidden->pitch);
+	long long int *src3 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 2));
+	long long int *src4 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 3));
+	int rowpitch = (this->hidden->pitch >> 3) * 3;
+	int rowadjust = (this->hidden->pitch % 8) * 4;
+	char *ra = NULL;
+
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < this->hidden->width; w += 4)
+		{
+			*dst++ = *src1++;
+			*dst++ = *src2++;
+			*dst++ = *src3++;
+			*dst++ = *src4++;
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+
+		if ( rowadjust )
+		{
+			ra = (char *)src1;
+			src1 = (long long int *)(ra + rowadjust);
+			ra = (char *)src2;
+			src2 = (long long int *)(ra + rowadjust);
+			ra = (char *)src3;
+			src3 = (long long int *)(ra + rowadjust);
+			ra = (char *)src4;
+			src4 = (long long int *)(ra + rowadjust);
+		}
+	}
+}
 
 static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
 {
@@ -548,7 +570,7 @@ static void WII_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 {
 	const int last_color = first_color + color_count;
-	Wii_Palette* const palette = &this->hidden->palette;
+	Uint16* const palette = this->hidden->palette;
 	int     component;
 
 	/* Build the RGB565 palette. */
@@ -559,7 +581,7 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 		const unsigned int g    = in->g;
 		const unsigned int b    = in->b;
 
-		(*palette)[component] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+		palette[component] = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 	}
 
 	return(1);
