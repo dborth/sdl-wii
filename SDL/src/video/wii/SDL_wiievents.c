@@ -532,8 +532,14 @@ void wii_mouse_init()
 
 static int posted;
 
+extern bool TerminateRequested;
+extern void Terminate();
+
 void PumpEvents()
 {
+#ifdef HW_RVL
+	if (TerminateRequested) Terminate();
+#endif
 	WPADData *wd = WPAD_Data(0);
 
 	stat = KEYBOARD_getEvent(&ke);
