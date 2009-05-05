@@ -49,6 +49,9 @@ SDL_SRCS	:= \
 # Library object files.
 SDL_OBJS	:= $(subst $(SDL_SRC_DIR),$(SDL_OBJ_DIR),$(SDL_SRCS:.c=.o))
 
+# Used to install library by pressing Alt+R in Programmer's Notepad
+run: all lib-install
+
 # What's a full build?
 all: $(LIB_DIR)/libSDL.a
 
