@@ -31,6 +31,9 @@
 #include <gccore.h>
 #include <unistd.h>
 #include <wiiuse/wpad.h>
+#include <math.h>
+
+#define PI 					3.14159265f
 
 #define MAX_GC_JOYSTICKS	4
 #define MAX_WII_JOYSTICKS	4
@@ -40,11 +43,11 @@
 #define MAX_GC_BUTTONS		8
 #define	MAX_GC_HATS			1
 
-#define MAX_WII_AXES		8
+#define MAX_WII_AXES		6
 #define MAX_WII_BUTTONS		20
-#define	MAX_WII_HATS		2
+#define	MAX_WII_HATS		1
 
-#define	JOYNAMELEN		10
+#define	JOYNAMELEN			10
 
 typedef struct joystick_paddata_t
 {
@@ -81,6 +84,42 @@ typedef struct joystick_hwdata_t
 		joystick_wpaddata wiimote;
 	};
 }joystick_hwdata;
+
+static const u32 sdl_buttons_wii[] =
+{
+	WPAD_BUTTON_A,
+	WPAD_BUTTON_B,
+	WPAD_BUTTON_1,
+	WPAD_BUTTON_2,
+	WPAD_BUTTON_MINUS,
+	WPAD_BUTTON_PLUS,
+	WPAD_BUTTON_HOME,
+	WPAD_NUNCHUK_BUTTON_Z,
+	WPAD_NUNCHUK_BUTTON_C,
+	WPAD_CLASSIC_BUTTON_A,
+	WPAD_CLASSIC_BUTTON_B,
+	WPAD_CLASSIC_BUTTON_X,
+	WPAD_CLASSIC_BUTTON_Y,
+	WPAD_CLASSIC_BUTTON_FULL_L,
+	WPAD_CLASSIC_BUTTON_FULL_R,
+	WPAD_CLASSIC_BUTTON_ZL,
+	WPAD_CLASSIC_BUTTON_ZR,
+	WPAD_CLASSIC_BUTTON_MINUS,
+	WPAD_CLASSIC_BUTTON_PLUS,
+	WPAD_CLASSIC_BUTTON_HOME
+};
+
+static const u16 sdl_buttons_gc[] =
+{
+	PAD_BUTTON_A,
+	PAD_BUTTON_B,
+	PAD_BUTTON_X,
+	PAD_BUTTON_Y,
+	PAD_TRIGGER_Z,
+	PAD_TRIGGER_R,
+	PAD_TRIGGER_L,
+	PAD_BUTTON_START
+};
 
 static int __jswpad_enabled = 1;
 static int __jspad_enabled = 1;
@@ -165,122 +204,158 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 	return(0);
 }
 
+static s8 WPAD_Stick(u8 chan, u8 right, int axis)
+{
+	float mag = 0.0;
+	float ang = 0.0;
+	WPADData *data = WPAD_Data(chan);
+
+	switch (data->exp.type)
+	{
+		case WPAD_EXP_NUNCHUK:
+		case WPAD_EXP_GUITARHERO3:
+			if (right == 0)
+			{
+				mag = data->exp.nunchuk.js.mag;
+				ang = data->exp.nunchuk.js.ang;
+			}
+			break;
+
+		case WPAD_EXP_CLASSIC:
+			if (right == 0)
+			{
+				mag = data->exp.classic.ljs.mag;
+				ang = data->exp.classic.ljs.ang;
+			}
+			else
+			{
+				mag = data->exp.classic.rjs.mag;
+				ang = data->exp.classic.rjs.ang;
+			}
+			break;
+
+		default:
+			break;
+	}
+
+	/* calculate x/y value (angle need to be converted into radian) */
+	if (mag > 1.0) mag = 1.0;
+	else if (mag < -1.0) mag = -1.0;
+	double val;
+
+	if(axis == 0) // x-axis
+		val = mag * sin((PI * ang)/180.0f);
+	else // y-axis
+		val = mag * cos((PI * ang)/180.0f);
+
+	return (s8)(val * 128.0f);
+}
+
 static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 {
 	u32 buttons, prev_buttons, changed;
-	int i;
+	u32 exp_type;
+	struct expansion_t exp;
+	int i, axis;
 	joystick_hwdata *prev_state;
 
-	const u32 sdl_buttons[] =
-	{
-		WPAD_BUTTON_A,
-		WPAD_BUTTON_B,
-		WPAD_BUTTON_1,
-		WPAD_BUTTON_2,
-		WPAD_BUTTON_MINUS,
-		WPAD_BUTTON_PLUS,
-		WPAD_BUTTON_HOME,
-		WPAD_NUNCHUK_BUTTON_Z,
-		WPAD_NUNCHUK_BUTTON_C,
-		WPAD_CLASSIC_BUTTON_A,
-		WPAD_CLASSIC_BUTTON_B,
-		WPAD_CLASSIC_BUTTON_X,
-		WPAD_CLASSIC_BUTTON_Y,
-		WPAD_CLASSIC_BUTTON_FULL_L,
-		WPAD_CLASSIC_BUTTON_FULL_R,
-		WPAD_CLASSIC_BUTTON_ZL,
-		WPAD_CLASSIC_BUTTON_ZR,
-		WPAD_CLASSIC_BUTTON_MINUS,
-		WPAD_CLASSIC_BUTTON_PLUS,
-		WPAD_CLASSIC_BUTTON_HOME
-	};
-
 	buttons = WPAD_ButtonsHeld(joystick->index);
-	struct expansion_t exp;
+
+	if (WPAD_Probe(joystick->index, &exp_type) != 0)
+		exp_type = WPAD_EXP_NONE;
+
 	WPAD_Expansion(joystick->index, &exp);
+
 	prev_state = (joystick_hwdata *)joystick->hwdata;
 	prev_buttons = prev_state->wiimote.prev_buttons;
 	changed = buttons ^ prev_buttons;
 
-	if(changed & (WPAD_BUTTON_LEFT | WPAD_BUTTON_RIGHT | WPAD_BUTTON_DOWN | WPAD_BUTTON_UP))
+	if(exp_type == WPAD_EXP_CLASSIC) // classic controller
 	{
-		int hat = SDL_HAT_CENTERED;
-		if(buttons & WPAD_BUTTON_UP) hat |= SDL_HAT_UP;
-		if(buttons & WPAD_BUTTON_DOWN) hat |= SDL_HAT_DOWN;
-		if(buttons & WPAD_BUTTON_LEFT) hat |= SDL_HAT_LEFT;
-		if(buttons & WPAD_BUTTON_RIGHT) hat |= SDL_HAT_RIGHT;
-		SDL_PrivateJoystickHat(joystick, 0, hat);
+		if(changed & (WPAD_CLASSIC_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_RIGHT |
+			WPAD_CLASSIC_BUTTON_DOWN | WPAD_CLASSIC_BUTTON_UP))
+		{
+			int hat = SDL_HAT_CENTERED;
+			if(buttons & WPAD_CLASSIC_BUTTON_UP) hat |= SDL_HAT_UP;
+			if(buttons & WPAD_CLASSIC_BUTTON_DOWN) hat |= SDL_HAT_DOWN;
+			if(buttons & WPAD_CLASSIC_BUTTON_LEFT) hat |= SDL_HAT_LEFT;
+			if(buttons & WPAD_CLASSIC_BUTTON_RIGHT) hat |= SDL_HAT_RIGHT;
+			SDL_PrivateJoystickHat(joystick, 0, hat);
+		}
+	}
+	else // wiimote
+	{
+		if(changed & (WPAD_BUTTON_LEFT | WPAD_BUTTON_RIGHT | WPAD_BUTTON_DOWN | WPAD_BUTTON_UP))
+		{
+			int hat = SDL_HAT_CENTERED;
+			if(buttons & WPAD_BUTTON_UP) hat |= SDL_HAT_LEFT;
+			if(buttons & WPAD_BUTTON_DOWN) hat |= SDL_HAT_RIGHT;
+			if(buttons & WPAD_BUTTON_LEFT) hat |= SDL_HAT_DOWN;
+			if(buttons & WPAD_BUTTON_RIGHT) hat |= SDL_HAT_UP;
+			SDL_PrivateJoystickHat(joystick, 0, hat);
+		}
 	}
 
-	if(changed & (WPAD_CLASSIC_BUTTON_LEFT | WPAD_CLASSIC_BUTTON_RIGHT |
-					WPAD_CLASSIC_BUTTON_DOWN | WPAD_CLASSIC_BUTTON_UP))
+	for(i = 0; i < (sizeof(sdl_buttons_wii) / sizeof(sdl_buttons_wii[0])); i++)
 	{
-		int hat = SDL_HAT_CENTERED;
-		if(buttons & WPAD_CLASSIC_BUTTON_UP) hat |= SDL_HAT_UP;
-		if(buttons & WPAD_CLASSIC_BUTTON_DOWN) hat |= SDL_HAT_DOWN;
-		if(buttons & WPAD_CLASSIC_BUTTON_LEFT) hat |= SDL_HAT_LEFT;
-		if(buttons & WPAD_CLASSIC_BUTTON_RIGHT) hat |= SDL_HAT_RIGHT;
-		SDL_PrivateJoystickHat(joystick, 1, hat);
+		if (changed & sdl_buttons_wii[i])
+			SDL_PrivateJoystickButton(joystick, i,
+				(buttons & sdl_buttons_wii[i]) ? SDL_PRESSED : SDL_RELEASED);
 	}
-
-	for(i = 0; i < (sizeof(sdl_buttons) / sizeof(sdl_buttons[0])); i++)
-	if (changed & sdl_buttons[i])
-	SDL_PrivateJoystickButton(joystick, i,
-			(buttons & sdl_buttons[i]) ? SDL_PRESSED : SDL_RELEASED);
 	prev_state->wiimote.prev_buttons = buttons;
-	int axis;
-	if(exp.type == EXP_NUNCHUK)
+
+	if(exp_type == WPAD_EXP_CLASSIC)
 	{
-		axis = exp.nunchuk.js.pos.x;
-		if(prev_state->wiimote.nunchuk_stickX != axis)
-		{
-			SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
-			prev_state->wiimote.nunchuk_stickX = axis;
-		}
-		axis = exp.nunchuk.js.pos.y;
-		if(prev_state->wiimote.nunchuk_stickY != axis)
-		{
-			SDL_PrivateJoystickAxis(joystick, 1, axis << 8);
-			prev_state->wiimote.nunchuk_stickY = axis;
-		}
-	}
-	if(exp.type == EXP_CLASSIC)
-	{
-		axis = exp.classic.ljs.pos.x;
+		axis = WPAD_Stick(joystick->index, 0, 0);
 		if(prev_state->wiimote.classicL_stickX != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 2, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
 			prev_state->wiimote.classicL_stickX = axis;
 		}
-		axis = exp.classic.ljs.pos.y;
+		axis = WPAD_Stick(joystick->index, 0, 1);
 		if(prev_state->wiimote.classicL_stickY != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 3, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 1, axis << 8);
 			prev_state->wiimote.classicL_stickY = axis;
 		}
-		axis = exp.classic.rjs.pos.x;
+		axis = WPAD_Stick(joystick->index, 1, 0);
 		if(prev_state->wiimote.classicR_stickX != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 4, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 2, axis << 8);
 			prev_state->wiimote.classicR_stickX = axis;
 		}
-		axis = exp.classic.rjs.pos.y;
+		axis = WPAD_Stick(joystick->index, 1, 1);
 		if(prev_state->wiimote.classicR_stickY != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 5, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 3, axis << 8);
 			prev_state->wiimote.classicR_stickY = axis;
 		}
 		axis = exp.classic.r_shoulder;
 		if(prev_state->wiimote.classic_triggerR != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 6, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 4, axis << 8);
 			prev_state->wiimote.classic_triggerR = axis;
 		}
 		axis = exp.classic.l_shoulder;
 		if(prev_state->wiimote.classic_triggerL != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 7, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 5, axis << 8);
 			prev_state->wiimote.classic_triggerL = axis;
+		}
+	}
+	else if(exp_type == WPAD_EXP_NUNCHUK)
+	{
+		axis = WPAD_Stick(joystick->index, 0, 0);
+		if(prev_state->wiimote.nunchuk_stickX != axis)
+		{
+			SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
+			prev_state->wiimote.nunchuk_stickX = axis;
+		}
+		axis = WPAD_Stick(joystick->index, 0, 1);
+		if(prev_state->wiimote.nunchuk_stickY != axis)
+		{
+			SDL_PrivateJoystickAxis(joystick, 1, axis << 8);
+			prev_state->wiimote.nunchuk_stickY = axis;
 		}
 	}
 }
@@ -289,19 +364,8 @@ static void _HandleGCJoystickUpdate(SDL_Joystick* joystick)
 {
 	u16 buttons, prev_buttons, changed;
 	int i;
+	int axis;
 	joystick_hwdata *prev_state;
-
-	const int sdl_buttons[] =
-	{
-		PAD_BUTTON_A,
-		PAD_BUTTON_B,
-		PAD_BUTTON_X,
-		PAD_BUTTON_Y,
-		PAD_TRIGGER_Z,
-		PAD_TRIGGER_R,
-		PAD_TRIGGER_L,
-		PAD_BUTTON_START
-	};
 
 	buttons = PAD_ButtonsHeld(joystick->index - 4);
 	prev_state = (joystick_hwdata *)joystick->hwdata;
@@ -318,12 +382,14 @@ static void _HandleGCJoystickUpdate(SDL_Joystick* joystick)
 		SDL_PrivateJoystickHat(joystick, 0, hat);
 	}
 
-	for(i = 0; i < (sizeof(sdl_buttons) / sizeof(sdl_buttons[0])); i++)
-	if (changed & sdl_buttons[i])
-	SDL_PrivateJoystickButton(joystick, i,
-			(buttons & sdl_buttons[i]) ? SDL_PRESSED : SDL_RELEASED);
+	for(i = 0; i < (sizeof(sdl_buttons_gc) / sizeof(sdl_buttons_gc[0])); i++)
+	{
+		if (changed & sdl_buttons_gc[i])
+			SDL_PrivateJoystickButton(joystick, i,
+				(buttons & sdl_buttons_gc[i]) ? SDL_PRESSED : SDL_RELEASED);
+	}
 	prev_state->gamecube.prev_buttons = buttons;
-	int axis = PAD_StickX(joystick->index);
+	axis = PAD_StickX(joystick->index);
 	if(prev_state->gamecube.stickX != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
