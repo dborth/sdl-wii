@@ -200,7 +200,11 @@ int SDLNet_CheckSockets(SDLNet_SocketSet set, Uint32 timeout)
 		tv.tv_usec = (timeout%1000)*1000;
 
 		/* Look! */
+#if defined HW_RVL
+		retval = net_select(maxfd+1, &mask, NULL, NULL, &tv);
+#else
 		retval = select(maxfd+1, &mask, NULL, NULL, &tv);
+#endif
 	} while ( errno == EINTR );
 
 	/* Mark all file descriptors ready that have data available */

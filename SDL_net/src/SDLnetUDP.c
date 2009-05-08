@@ -307,6 +307,8 @@ extern UDPsocket SDLNet_UDP_Open(Uint16 port)
 		// (01/05/03 minami<elsur@aaa.letter.co.jp>
 		OTSetBlocking( sock->channel );
 	}
+#elif defined HW_RVL
+	sock->channel = net_socket(AF_INET, SOCK_DGRAM, 0);
 #else
 	sock->channel = socket(AF_INET, SOCK_DGRAM, 0);
 #endif /* MACOS_OPENTRANSPORT */
@@ -372,7 +374,11 @@ extern UDPsocket SDLNet_UDP_Open(Uint16 port)
 		sock_addr.sin_port = SDL_SwapBE16(port);
 
 		/* Bind the socket for listening */
+#if defined HW_RVL
+		if ( net_bind(sock->channel, (struct sockaddr *)&sock_addr,
+#else
 		if ( bind(sock->channel, (struct sockaddr *)&sock_addr,
+#endif
 				sizeof(sock_addr)) == SOCKET_ERROR ) {
 			SDLNet_SetError("Couldn't bind to local port");
 			goto error_return;
@@ -385,7 +391,11 @@ extern UDPsocket SDLNet_UDP_Open(Uint16 port)
 #ifdef SO_BROADCAST
 	/* Allow LAN broadcasts with the socket */
 	{ int yes = 1;
+#if defined HW_RVL
+		net_setsockopt(sock->channel, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
+#else
 		setsockopt(sock->channel, SOL_SOCKET, SO_BROADCAST, (char*)&yes, sizeof(yes));
+#endif
 	}
 #endif
 #ifdef IP_ADD_MEMBERSHIP
@@ -556,7 +566,11 @@ int SDLNet_UDP_SendV(UDPsocket sock, UDPpacket **packets, int npackets)
 			sock_addr.sin_addr.s_addr = packets[i]->address.host;
 			sock_addr.sin_port = packets[i]->address.port;
 			sock_addr.sin_family = AF_INET;
+#if defined HW_RVL
+			status = net_sendto(sock->channel, 
+#else
 			status = sendto(sock->channel, 
+#endif
 					packets[i]->data, packets[i]->len, 0,
 					(struct sockaddr *)&sock_addr,sock_len);
 			if ( status >= 0 )
@@ -607,7 +621,11 @@ int SDLNet_UDP_SendV(UDPsocket sock, UDPpacket **packets, int npackets)
 				sock_addr.sin_addr.s_addr = binding->address[j].host;
 				sock_addr.sin_port = binding->address[j].port;
 				sock_addr.sin_family = AF_INET;
+#if defined HW_RVL
+				status = net_sendto(sock->channel, 
+#else
 				status = sendto(sock->channel, 
+#endif
 						packets[i]->data, packets[i]->len, 0,
 						(struct sockaddr *)&sock_addr,sock_len);
 				if ( status >= 0 )
@@ -673,7 +691,11 @@ static int SocketReady(SOCKET sock)
 		tv.tv_usec = 0;
 
 		/* Look! */
+#if defined HW_RVL
+		retval = net_select(sock+1, &mask, NULL, NULL, &tv);
+#else
 		retval = select(sock+1, &mask, NULL, NULL, &tv);
+#endif
 	} while ( errno == EINTR );
 #endif /* MACOS_OPENTRANSPORT */
 
@@ -730,11 +752,17 @@ extern int SDLNet_UDP_RecvV(UDPsocket sock, UDPpacket **packets)
 		}
 #else
 		sock_len = sizeof(sock_addr);
+#if defined HW_RVL
+		packet->status = net_recvfrom(sock->channel,
+#else
 		packet->status = recvfrom(sock->channel,
+#endif
 				packet->data, packet->maxlen, 0,
 				(struct sockaddr *)&sock_addr,
 #ifdef USE_GUSI_SOCKETS
 				(unsigned int *)&sock_len);
+#elif defined HW_RVL
+				(socklen_t *)&sock_len);
 #else
 						&sock_len);
 #endif
