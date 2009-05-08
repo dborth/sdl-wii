@@ -17,7 +17,7 @@ SRC_DIR			:= src
 INCLUDE_DIR		:= include
 TEST_OBJ_DIR		:= $(OBJ_DIR)/test
 TEST_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include/
+INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
 INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
 
 # Tools.
@@ -41,10 +41,10 @@ TEST_OBJS	:= $(subst $(TEST_SRC_DIR)/,$(TEST_OBJ_DIR)/,$(TEST_SRCS:.c=.o))
 TEST_DOLS	:= $(subst $(TEST_OBJ_DIR),$(BIN_DIR),$(TEST_OBJS:.o=.dol))
 
 # What's a full build?
-all: $(LIB_DIR)/libSDL_mixer.a $(INCLUDE_DIR)/SDL_mixer.h install
+all: $(LIB_DIR)/libSDL_mixer.a $(INCLUDE_DIR)/SDL_mixer.h
 
 # How to install to SD card ready for running.
-install: $(TEST_DOLS)
+test-install: $(TEST_DOLS)
 	@-mkdir -p dols
 	cp $(TEST_DOLS) dols
 
@@ -53,7 +53,7 @@ clean:
 	@echo Cleaning $(LIB_DIR)/libSDL_mixer.a $(OBJ_DIR)
 	@rm -f $(LIB_DIR)/libSDL_mixer.a $(OBJS) $(TEST_OBJS)
 	
-lib-install:
+install:
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)

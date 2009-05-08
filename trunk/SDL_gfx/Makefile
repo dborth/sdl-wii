@@ -17,7 +17,7 @@ SRC_DIR			:= src
 INCLUDE_DIR		:= include
 TEST_OBJ_DIR		:= $(OBJ_DIR)/test
 TEST_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include/
+INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
 INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
 
 # Tools.
@@ -44,7 +44,7 @@ $(LIB_DIR)/libSDL_gfx.a: $(OBJS)
 	@powerpc-gekko-ar crs $@ $(OBJS)
 	@echo ----
 	
-lib-install:
+install:
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
