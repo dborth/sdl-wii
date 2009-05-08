@@ -52,19 +52,20 @@ SDL_OBJS	:= $(subst $(SDL_SRC_DIR),$(SDL_OBJ_DIR),$(SDL_SRCS:.c=.o))
 # What's a full build?
 all: $(LIB_DIR)/libSDL.a
 
-# Used to install library by pressing Alt+R in Programmer's Notepad
-run: all lib-install
-
 # How to delete the intermediate files.
 clean:
 	@echo Cleaning $(LIB_DIR) $(SDL_OBJS)
 	@rm -fr $(LIB_DIR) $(SDL_OBJS)
-	
-lib-install:
+
+install:
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
 	@cp -frv include/*.* $(INSTALL_HEADER_DIR)/SDL
+
+# Used to install library by pressing Alt+R in Programmer's Notepad
+run:
+	all install
 	
 test-make:
 	$(MAKE) -f Makefile.test install

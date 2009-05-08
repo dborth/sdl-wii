@@ -28,7 +28,7 @@ SRCS	:= $(wildcard $(SRC_DIR)/*.c)
 OBJS	:= $(subst $(SRC_DIR),$(OBJ_DIR),$(SRCS:.c=.o))
 
 # What's a full build?
-all: $(LIB_DIR)/libSDL_net.a
+all: $(LIB_DIR)/libSDL_net.a $(INCLUDE_DIR)/SDL_net.h
 
 # How to delete the intermediate files.
 clean:
@@ -36,8 +36,6 @@ clean:
 	@rm -f $(LIB_DIR)/libSDL_net.a $(OBJS) $(TEST_OBJS)
 	
 install:
-	
-lib-install:
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
