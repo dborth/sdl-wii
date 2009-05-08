@@ -708,7 +708,11 @@ TCPsocket SDLNet_TCP_Open(IPaddress *ip)
 	}
 
 	/* Open the socket */
+#if defined HW_RVL
+	sock->channel = net_socket(AF_INET, SOCK_STREAM, 0);
+#else
 	sock->channel = socket(AF_INET, SOCK_STREAM, 0);
+#endif
 	if ( sock->channel == INVALID_SOCKET ) {
 		SDLNet_SetError("Couldn't create socket");
 		goto error_return;
@@ -725,7 +729,11 @@ TCPsocket SDLNet_TCP_Open(IPaddress *ip)
 		sock_addr.sin_port = ip->port;
 
 		/* Connect to the remote host */
+#if defined HW_RVL
+		if ( net_connect(sock->channel, (struct sockaddr *)&sock_addr,
+#else
 		if ( connect(sock->channel, (struct sockaddr *)&sock_addr,
+#endif
 				sizeof(sock_addr)) == SOCKET_ERROR ) {
 			SDLNet_SetError("Couldn't connect to remote host");
 			goto error_return;
@@ -745,7 +753,7 @@ TCPsocket SDLNet_TCP_Open(IPaddress *ip)
  * http://www.devolution.com/pipermail/sdl/2005-September/070491.html
  *   --ryan.
  */
-#ifndef WIN32
+#if !defined WIN32 && !defined HW_RVL
 		/* allow local address reuse */
 		{ int yes = 1;
 			setsockopt(sock->channel, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(yes));
@@ -753,12 +761,20 @@ TCPsocket SDLNet_TCP_Open(IPaddress *ip)
 #endif
 
 		/* Bind the socket for listening */
+#if defined HW_RVL
+		if ( net_bind(sock->channel, (struct sockaddr *)&sock_addr,
+#else
 		if ( bind(sock->channel, (struct sockaddr *)&sock_addr,
+#endif
 				sizeof(sock_addr)) == SOCKET_ERROR ) {
 			SDLNet_SetError("Couldn't bind to local port");
 			goto error_return;
 		}
+#if defined HW_RVL
+		if ( net_listen(sock->channel, 5) == SOCKET_ERROR ) {
+#else
 		if ( listen(sock->channel, 5) == SOCKET_ERROR ) {
+#endif
 			SDLNet_SetError("Couldn't listen to local port");
 			goto error_return;
 		}
@@ -794,7 +810,11 @@ TCPsocket SDLNet_TCP_Open(IPaddress *ip)
 #ifdef TCP_NODELAY
 	/* Set the nodelay TCP option for real-time games */
 	{ int yes = 1;
+#if defined HW_RVL
+	net_setsockopt(sock->channel, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(yes));
+#else	
 	setsockopt(sock->channel, IPPROTO_TCP, TCP_NODELAY, (char*)&yes, sizeof(yes));
+#endif
 	}
 #endif /* TCP_NODELAY */
 
@@ -835,9 +855,15 @@ TCPsocket SDLNet_TCP_Accept(TCPsocket server)
 
 	/* Accept a new TCP connection on a server socket */
 	sock_alen = sizeof(sock_addr);
+#if defined HW_RVL
+	sock->channel = net_accept(server->channel, (struct sockaddr *)&sock_addr,
+#else
 	sock->channel = accept(server->channel, (struct sockaddr *)&sock_addr,
+#endif
 #ifdef USE_GUSI_SOCKETS
 						(unsigned int *)&sock_alen);
+#elif defined HW_RVL
+								(socklen_t *)&sock_alen);
 #else
 								&sock_alen);
 #endif
@@ -903,7 +929,11 @@ int SDLNet_TCP_Send(TCPsocket sock, const void *datap, int len)
 	sent = 0;
 	errno = 0;
 	do {
+#if defined HW_RVL
+		len = net_send(sock->channel, (const char *) data, left, 0);
+#else
 		len = send(sock->channel, (const char *) data, left, 0);
+#endif
 		if ( len > 0 ) {
 			sent += len;
 			left -= len;
@@ -932,7 +962,11 @@ int SDLNet_TCP_Recv(TCPsocket sock, void *data, int maxlen)
 
 	errno = 0;
 	do {
+#if defined HW_RVL
+		len = net_recv(sock->channel, (char *) data, maxlen, 0);
+#else
 		len = recv(sock->channel, (char *) data, maxlen, 0);
+#endif
 	} while ( errno == EINTR );
 
 	sock->ready = 0;
