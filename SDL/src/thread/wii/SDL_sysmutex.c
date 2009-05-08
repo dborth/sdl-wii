@@ -59,8 +59,6 @@ void SDL_DestroyMutex(SDL_mutex *mutex)
 /* Lock the semaphore */
 int SDL_mutexP(SDL_mutex *mutex)
 {
-	Uint32 this_thread;
-
 	if ( mutex == NULL ) {
 		SDL_SetError("Passed a NULL mutex");
 		return -1;
