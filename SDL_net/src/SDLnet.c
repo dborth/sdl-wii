@@ -341,8 +341,11 @@ int SDLNet_ResolveHost(IPaddress *address, const char *host, Uint16 port)
 		address->host = inet_addr(host);
 		if ( address->host == INADDR_NONE ) {
 			struct hostent *hp;
-
+#if defined __WII__
+			hp = net_gethostbyname(host);
+#else
 			hp = gethostbyname(host);
+#endif
 			if ( hp ) {
 				memcpy(&address->host,hp->h_addr,hp->h_length);
 			} else {
@@ -367,12 +370,14 @@ int SDLNet_ResolveHost(IPaddress *address, const char *host, Uint16 port)
  */
 const char *SDLNet_ResolveIP(IPaddress *ip)
 {
+#if !defined __WII__
 	struct hostent *hp;
 
 	hp = gethostbyaddr((char *)&ip->host, 4, AF_INET);
 	if ( hp != NULL ) {
 		return hp->h_name;
 	}
+#endif
   	return NULL;
 }
 

@@ -25,6 +25,10 @@
 #ifndef _SDL_NET_H
 #define _SDL_NET_H
 
+#if defined HW_RVL
+#define SDL_reinterpret_cast(T, E) ((T)((void *)E))
+#endif
+
 #include "SDL.h"
 #include "SDL_endian.h"
 #include "SDL_version.h"

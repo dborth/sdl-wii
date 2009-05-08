@@ -51,15 +51,21 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <fcntl.h>
+#if !defined HW_RVL
 #include <netinet/in.h>
-#ifndef __BEOS__
+#endif
+#if !defined __BEOS__ && !defined HW_RVL
 #include <arpa/inet.h>
 #endif
 #ifdef linux /* FIXME: what other platforms have this? */
 #include <netinet/tcp.h>
 #endif
+#if !defined HW_RVL
 #include <netdb.h>
 #include <sys/socket.h>
+#else
+#include <network.h>
+#endif
 #endif /* WIN32 */
 #endif /* Open Transport */
 
@@ -77,8 +83,10 @@
 #define closesocket	close
 #endif /* __OS2__ */
 #define SOCKET	int
+#if !defined HW_RVL
 #define INVALID_SOCKET	-1
 #define SOCKET_ERROR	-1
+#endif
 #endif /* __USE_W32_SOCKETS */
 #endif /* Open Transport */
 
