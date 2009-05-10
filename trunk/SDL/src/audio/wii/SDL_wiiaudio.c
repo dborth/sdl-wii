@@ -36,13 +36,13 @@
 #include <ogc/cache.h>
 #include "SDL_wiiaudio.h"
 
-#define SAMPLES_PER_DMA_BUFFER 2048
+#define SAMPLES_PER_DMA_BUFFER (2048)
 
 static const char WIIAUD_DRIVER_NAME[] = "wii";
 static Uint32 dma_buffers[2][SAMPLES_PER_DMA_BUFFER] __attribute__((aligned(32)));
 static Uint8 whichab = 0;
 
-#define AUDIOSTACK 16384
+#define AUDIOSTACK 16384*2
 static lwpq_t audioqueue;
 static lwp_t athread;
 static Uint8 astack[AUDIOSTACK];
@@ -58,7 +58,7 @@ AudioThread (void *arg)
 	while (1)
 	{
 		whichab ^= 1;
-		memset(dma_buffers[whichab], 0, SAMPLES_PER_DMA_BUFFER);
+		memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
 
 		// Is the device ready?
 		if (current_audio && (!current_audio->paused))
@@ -105,7 +105,8 @@ AudioThread (void *arg)
 				//SDL_mutexP(current_audio->mixer_lock);
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
-					(Uint8 *)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
+					(Uint8 *)dma_buffers[whichab],
+					sizeof(dma_buffers[whichab]));
 				//SDL_mutexV(current_audio->mixer_lock);
 			}
 		}
@@ -123,8 +124,8 @@ static void
 DMACallback()
 {
 	AUDIO_StopDMA ();
-	DCFlushRange (dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
-	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER);
+	DCFlushRange (dma_buffers[whichab], sizeof(dma_buffers[0]));
+	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], sizeof(dma_buffers[0]));
 	AUDIO_StartDMA ();
 
 	LWP_ThreadSignal (audioqueue);
@@ -142,8 +143,8 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	spec->padding	= 0;
 	SDL_CalculateAudioSpec(spec);
 
-	memset(dma_buffers[0], 0, SAMPLES_PER_DMA_BUFFER);
-	memset(dma_buffers[1], 0, SAMPLES_PER_DMA_BUFFER);
+	memset(dma_buffers[0], 0, sizeof(dma_buffers[0]));
+	memset(dma_buffers[1], 0, sizeof(dma_buffers[0]));
 
 	if (spec->freq == 32000)
 		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
