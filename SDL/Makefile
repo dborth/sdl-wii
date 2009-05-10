@@ -64,8 +64,7 @@ install:
 	@cp -frv include/*.* $(INSTALL_HEADER_DIR)/SDL
 
 # Used to install library by pressing Alt+R in Programmer's Notepad
-run:
-	all install
+run: all install
 	
 test-make:
 	$(MAKE) -f Makefile.test install
