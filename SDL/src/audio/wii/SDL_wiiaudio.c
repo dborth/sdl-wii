@@ -132,8 +132,10 @@ DMACallback()
 
 static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 {
+	if (spec->freq != 32000 && spec->freq != 48000)
+		spec->freq = 32000;
+
 	// Set up actual spec.
-	spec->freq		= 48000;
 	spec->format	= AUDIO_S16MSB;
 	spec->channels	= 2;
 	spec->samples	= SAMPLES_PER_DMA_BUFFER;
@@ -142,6 +144,11 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 
 	memset(dma_buffers[0], 0, SAMPLES_PER_DMA_BUFFER);
 	memset(dma_buffers[1], 0, SAMPLES_PER_DMA_BUFFER);
+
+	if (spec->freq == 32000)
+		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
+	else
+		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 
 	// startup conversion thread
 	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 65);
@@ -213,7 +220,6 @@ static SDL_AudioDevice *WIIAUD_CreateDevice(int devindex)
 
 	// Initialise the Wii side of the audio system
 	AUDIO_Init(0);
-	AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 	AUDIO_RegisterDMACallback(DMACallback);
 
 	/* Set the function pointers */
