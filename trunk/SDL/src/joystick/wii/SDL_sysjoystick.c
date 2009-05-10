@@ -49,6 +49,9 @@
 
 #define	JOYNAMELEN			10
 
+#define AXIS_MIN	-32768  /* minimum value for axis coordinate */
+#define AXIS_MAX	32767   /* maximum value for axis coordinate */
+
 typedef struct joystick_paddata_t
 {
 	u16 prev_buttons;
@@ -204,7 +207,7 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 	return(0);
 }
 
-static s8 WPAD_Stick(u8 chan, u8 right, int axis)
+static s16 WPAD_Stick(u8 chan, u8 right, int axis)
 {
 	float mag = 0.0;
 	float ang = 0.0;
@@ -248,7 +251,7 @@ static s8 WPAD_Stick(u8 chan, u8 right, int axis)
 	else // y-axis
 		val = mag * cos((PI * ang)/180.0f);
 
-	return (s8)(val * 128.0f);
+	return (s16)(val * 128.0f);
 }
 
 static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
@@ -309,13 +312,21 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 		axis = WPAD_Stick(joystick->index, 0, 0);
 		if(prev_state->wiimote.classicL_stickX != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
+			s16 value;
+			if (axis >= 128) value = AXIS_MAX;
+			else if (axis <=-128) value = AXIS_MIN;
+			else value = axis << 8;
+			SDL_PrivateJoystickAxis(joystick, 0, value);
 			prev_state->wiimote.classicL_stickX = axis;
 		}
 		axis = WPAD_Stick(joystick->index, 0, 1);
 		if(prev_state->wiimote.classicL_stickY != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 1, axis << 8);
+			s16 value;
+			if (axis >= 128) value = AXIS_MAX;
+			else if (axis <=-128) value = AXIS_MIN;
+			else value = axis << 8;
+			SDL_PrivateJoystickAxis(joystick, 1, -value);
 			prev_state->wiimote.classicL_stickY = axis;
 		}
 		axis = WPAD_Stick(joystick->index, 1, 0);
@@ -348,13 +359,21 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 		axis = WPAD_Stick(joystick->index, 0, 0);
 		if(prev_state->wiimote.nunchuk_stickX != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
+			s16 value;
+			if (axis >= 128) value = AXIS_MAX;
+			else if (axis <=-128) value = AXIS_MIN;
+			else value = axis << 8;
+			SDL_PrivateJoystickAxis(joystick, 0, value);
 			prev_state->wiimote.nunchuk_stickX = axis;
 		}
 		axis = WPAD_Stick(joystick->index, 0, 1);
 		if(prev_state->wiimote.nunchuk_stickY != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 1, axis << 8);
+			s16 value;
+			if (axis >= 128) value = AXIS_MAX;
+			else if (axis <=-128) value = AXIS_MIN;
+			else value = axis << 8;
+			SDL_PrivateJoystickAxis(joystick, 1, -value);
 			prev_state->wiimote.nunchuk_stickY = axis;
 		}
 	}
