@@ -237,8 +237,8 @@ int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	mode_320.h = mode_640.h / 2;
 
 	// Set the current format.
-	vformat->BitsPerPixel	= 8;
-	vformat->BytesPerPixel	= 1;
+	vformat->BitsPerPixel	= 16;
+	vformat->BytesPerPixel	= 2;
 
 	this->hidden->buffer = NULL;
 	this->hidden->width = 0;
