@@ -36,10 +36,10 @@
 #include <ogc/cache.h>
 #include "SDL_wiiaudio.h"
 
-#define SAMPLES_PER_DMA_BUFFER (2048)
+#define SAMPLES_PER_DMA_BUFFER (512)
 
 static const char WIIAUD_DRIVER_NAME[] = "wii";
-static Uint32 dma_buffers[2][SAMPLES_PER_DMA_BUFFER] __attribute__((aligned(32)));
+static Uint32 dma_buffers[2][SAMPLES_PER_DMA_BUFFER*8] __attribute__((aligned(32)));
 static Uint8 whichab = 0;
 
 #define AUDIOSTACK 16384*2
@@ -106,7 +106,7 @@ AudioThread (void *arg)
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
 					(Uint8 *)dma_buffers[whichab],
-					sizeof(dma_buffers[whichab]));
+					SAMPLES_PER_DMA_BUFFER*4);
 				//SDL_mutexV(current_audio->mixer_lock);
 			}
 		}
@@ -125,7 +125,7 @@ DMACallback()
 {
 	AUDIO_StopDMA ();
 	DCFlushRange (dma_buffers[whichab], sizeof(dma_buffers[0]));
-	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], sizeof(dma_buffers[0]));
+	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
 	AUDIO_StartDMA ();
 
 	LWP_ThreadSignal (audioqueue);
