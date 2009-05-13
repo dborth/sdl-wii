@@ -88,13 +88,13 @@ $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo ----
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O2 -mrvl -Wall -mcpu=750 -meabi -mhard-float $(MACHDEP) 
+COMMON_FLAGS	:= -g -O2 -Wall $(MACHDEP) 
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include
 DEFINES			:= -DGEKKO
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -lfat -lwiiuse -lbte -logc -lm 
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -lwiikeyboard -lfat -lwiiuse -lbte -logc -lm 
 
 # How to compile C file (SDL library).
 $(SDL_OBJ_DIR)/%.o: $(SDL_SRC_DIR)/%.c
