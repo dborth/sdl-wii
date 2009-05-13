@@ -281,9 +281,9 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 		return NULL;
 	}
 
-	if(bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32)
+	if(bpp != 8 && bpp != 16 && bpp != 24)
 	{
-		SDL_SetError("Resolution (%d bpp) is unsupported (8 or 16 bpp only).",
+		SDL_SetError("Resolution (%d bpp) is unsupported (8/16/24 bpp only).",
 			bpp);
 		return NULL;
 	}
@@ -319,7 +319,7 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	SDL_memset(this->hidden->buffer, 0, width * height * bytes_per_pixel);
 
 	// Set up the new mode framebuffer
-	current->flags =  SDL_DOUBLEBUF |( flags & SDL_FULLSCREEN);
+	current->flags = SDL_DOUBLEBUF | (flags & SDL_FULLSCREEN) | (flags & SDL_HWPALETTE);
 	current->w = width;
 	current->h = height;
 	current->pitch = current->w * bytes_per_pixel;
@@ -380,7 +380,7 @@ static void flipHWSurface_8_16(_THIS, SDL_Surface *surface)
 		for (w = 0; w < this->hidden->width; w++)
 		{
 			Uint16 v = palette[*ptr];
-	
+
 			*ptr_cv++ = v;
 			ptr++;
 		}
@@ -484,7 +484,7 @@ static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
 			r = *ptr++;
 			g = *ptr++;
 			b = *ptr++;
-	
+
 			*ptr_cv++ = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 		}
 	}
