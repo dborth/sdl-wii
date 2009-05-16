@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 	WPAD_SetVRes(0, 640, 480);
 
 	MOUSE_Init();
-	KEYBOARD_Init();
+	KEYBOARD_Init(NULL);
 #endif
 	/* Call the user's main function */
 	return(SDL_main(argc, argv));
