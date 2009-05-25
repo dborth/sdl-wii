@@ -131,6 +131,10 @@ static int __numgcjoysticks = 4;
 
 static int __num_joysticks_open = 0;
 
+/* Helpers to separate nunchuk vs classic buttons which share the
+ * same scan codes. In particular, up on the classic controller is 
+ * the same as Z on the nunchuk. The numbers refer to the sdl_buttons_wii
+ * list above. */
 static int wii_button_is_nunchuk(int idx)
 {
 	return idx == 7 || idx == 8;
