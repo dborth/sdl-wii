@@ -97,9 +97,9 @@ static const u32 sdl_buttons_wii[] =
 	WPAD_BUTTON_MINUS,
 	WPAD_BUTTON_PLUS,
 	WPAD_BUTTON_HOME,
-	WPAD_NUNCHUK_BUTTON_Z,
-	WPAD_NUNCHUK_BUTTON_C,
-	WPAD_CLASSIC_BUTTON_A,
+	WPAD_NUNCHUK_BUTTON_Z, /* 7 */
+	WPAD_NUNCHUK_BUTTON_C, /* 8 */
+	WPAD_CLASSIC_BUTTON_A, /* 9 */
 	WPAD_CLASSIC_BUTTON_B,
 	WPAD_CLASSIC_BUTTON_X,
 	WPAD_CLASSIC_BUTTON_Y,
@@ -130,6 +130,16 @@ static int __numwiijoysticks = 4;
 static int __numgcjoysticks = 4;
 
 static int __num_joysticks_open = 0;
+
+static int wii_button_is_nunchuk(int idx)
+{
+	return idx == 7 || idx == 8;
+}
+
+static int wii_button_is_classic(int idx)
+{
+	return idx >= 9;
+}
 
 /* Function to scan the system for joysticks.
  * This function should return the number of available
@@ -301,6 +311,10 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 
 	for(i = 0; i < (sizeof(sdl_buttons_wii) / sizeof(sdl_buttons_wii[0])); i++)
 	{
+		if ( (exp_type == WPAD_EXP_CLASSIC && wii_button_is_nunchuk(i)) ||
+				(exp_type == WPAD_EXP_NUNCHUK && wii_button_is_classic(i)) )
+			continue;
+			
 		if (changed & sdl_buttons_wii[i])
 			SDL_PrivateJoystickButton(joystick, i,
 				(buttons & sdl_buttons_wii[i]) ? SDL_PRESSED : SDL_RELEASED);
