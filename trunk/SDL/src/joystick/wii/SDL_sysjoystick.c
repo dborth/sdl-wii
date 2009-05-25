@@ -338,7 +338,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 		axis = WPAD_Stick(joystick->index, 1, 1);
 		if(prev_state->wiimote.classicR_stickY != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 3, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 3, -(axis << 8));
 			prev_state->wiimote.classicR_stickY = axis;
 		}
 		axis = exp.classic.r_shoulder;
