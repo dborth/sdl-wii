@@ -43,14 +43,13 @@ struct SDL_Thread {
 void *run_thread(void *data)
 {
 	SDL_RunThread(data);
-	return((void *)0);		/* Prevent compiler warning */
+	return ((void *) 0); /* Prevent compiler warning */
 }
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-	//SDL_SetError("Threads are not supported on this platform");
-	LWP_CreateThread(&thread->handle, run_thread,  args, 0, 0, 10);
-	return(0);
+	LWP_CreateThread(&thread->handle, run_thread, args, 0, 0, 10);
+	return (0);
 }
 
 void SDL_SYS_SetupThread(void)
@@ -60,7 +59,7 @@ void SDL_SYS_SetupThread(void)
 
 Uint32 SDL_ThreadID(void)
 {
-	return (Uint32)LWP_GetSelf ();
+	return (Uint32) LWP_GetSelf();
 }
 
 void SDL_SYS_WaitThread(SDL_Thread *thread)
@@ -74,4 +73,3 @@ void SDL_SYS_KillThread(SDL_Thread *thread)
 {
 	return;
 }
-

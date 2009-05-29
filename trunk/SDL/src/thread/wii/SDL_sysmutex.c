@@ -28,20 +28,24 @@
 
 #include <ogcsys.h>
 
-struct SDL_mutex {
+struct SDL_mutex
+{
 	u32 id;
 };
 
 /* Create a mutex */
 SDL_mutex *SDL_CreateMutex(void)
 {
-	SDL_mutex *mutex;
+	SDL_mutex *mutex = NULL;
 
 	/* Allocate mutex memory */
-	mutex = (SDL_mutex *)SDL_malloc(sizeof(*mutex));
-	if ( mutex ) {
-		LWP_MutexInit (&mutex->id, 0);
-	} else {
+	mutex = (SDL_mutex *) SDL_malloc(sizeof(*mutex));
+	if (mutex)
+	{
+		LWP_MutexInit(&mutex->id, 0);
+	}
+	else
+	{
 		SDL_OutOfMemory();
 	}
 	return mutex;
@@ -50,7 +54,8 @@ SDL_mutex *SDL_CreateMutex(void)
 /* Free the mutex */
 void SDL_DestroyMutex(SDL_mutex *mutex)
 {
-	if ( mutex ) {
+	if (mutex)
+	{
 		LWP_MutexDestroy(mutex->id);
 		SDL_free(mutex);
 	}
@@ -59,28 +64,23 @@ void SDL_DestroyMutex(SDL_mutex *mutex)
 /* Lock the semaphore */
 int SDL_mutexP(SDL_mutex *mutex)
 {
-	if ( mutex == NULL ) {
+	if (mutex == NULL)
+	{
 		SDL_SetError("Passed a NULL mutex");
 		return -1;
 	}
 
 	return LWP_MutexLock(mutex->id);
-
 }
 
 /* Unlock the mutex */
 int SDL_mutexV(SDL_mutex *mutex)
 {
-	if ( mutex == NULL ) {
+	if (mutex == NULL)
+	{
 		SDL_SetError("Passed a NULL mutex");
 		return -1;
 	}
-
-	/* If we don't own the mutex, we can't unlock it */
-	/*	if ( SDL_ThreadID() != mutex->owner ) {
-		SDL_SetError("mutex not owned by this thread");
-		return -1;
-		}*/
 
 	return LWP_MutexUnlock(mutex->id);
 
