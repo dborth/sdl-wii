@@ -31,6 +31,7 @@
 #include "SDL_sysmutex_c.h"
 
 #include <ogcsys.h>
+#include <ogc/cond.h>
 
 struct SDL_cond
 {
@@ -111,7 +112,6 @@ extern int clock_gettime(struct timespec *tp);
 
 int SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 {
-	int retval;
 	struct timespec now;
 	struct timespec abstime;
 
@@ -129,9 +129,7 @@ int SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
           abstime.tv_nsec -= 1000000000;
         }
 
-	LWP_CondTimedWait ( cond->cond,  mutex->id, &abstime ) ;
-
-	return retval;
+	return LWP_CondTimedWait ( cond->cond,  mutex->id, &abstime ) ;
 }
 
 /* Wait on the condition variable forever */
