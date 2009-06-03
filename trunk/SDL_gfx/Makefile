@@ -57,7 +57,7 @@ headers:
 	@cp $(wildcard $(SRC_DIR)/*.h) $(INCLUDE_DIR)
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O2 -mrvl -Wall $(MACHDEP)
+COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)

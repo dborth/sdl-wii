@@ -79,7 +79,7 @@ $(INCLUDE_DIR)/SDL_image.h: $(SRC_DIR)/SDL_image.h
 	@cp $(SRC_DIR)/SDL_image.h $(INCLUDE_DIR)
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O2 -mrvl -Wall $(MACHDEP)
+COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL -I$(DEVKITPRO)/libogc/include/jpeg
 # -I$(DEVKITPRO)/libpng/include
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT -DLOAD_BMP -DLOAD_JPG -DLOAD_GIF -DLOAD_LBM -DLOAD_PCX -DLOAD_PNM -DLOAD_TGA -DLOAD_XCF -DLOAD_XPM -DLOAD_XV -DLOAD_PNG
