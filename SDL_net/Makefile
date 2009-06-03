@@ -55,7 +55,7 @@ $(INCLUDE_DIR)/SDL_net.h: $(SRC_DIR)/SDL_net.h
 	@cp $(SRC_DIR)/SDL_net.h $(INCLUDE_DIR)
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O2 -mrvl -Wall $(MACHDEP)
+COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL
 # -include sys/wait.h 
 # -include sys/syslimits.h

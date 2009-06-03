@@ -81,7 +81,7 @@ $(INCLUDE_DIR)/SDL_mixer.h: $(SRC_DIR)/SDL_mixer.h
 	@cp $(SRC_DIR)/SDL_mixer.h $(INCLUDE_DIR)
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O2 -mrvl -Wall $(MACHDEP)
+COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL -I$(DEVKITPRO)/libogc/include/mpeg -I$(DEVKITPRO)/libsmpeg/include -Isrc/mikmod -Isrc/timidity
 # -include sys/wait.h 
 # -include sys/syslimits.h
