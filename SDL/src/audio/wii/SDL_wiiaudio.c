@@ -78,13 +78,13 @@ AudioThread (void *arg)
 				// printf("\tlen_mult   = %d\n", current_audio->convert.len_mult);
 				// printf("\tlen_ratio  = %f\n", (float) current_audio->convert.len_ratio);
 
-				//SDL_mutexP(current_audio->mixer_lock);
+				SDL_mutexP(current_audio->mixer_lock);
 				// Get the client to produce audio.
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
 					current_audio->convert.buf,
 					current_audio->convert.len);
-				//SDL_mutexV(current_audio->mixer_lock);
+				SDL_mutexV(current_audio->mixer_lock);
 
 				// Convert the audio.
 				SDL_ConvertAudio(&current_audio->convert);
@@ -102,12 +102,12 @@ AudioThread (void *arg)
 			else
 			{
 				//printf("conversion is not needed\n");
-				//SDL_mutexP(current_audio->mixer_lock);
+				SDL_mutexP(current_audio->mixer_lock);
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
 					(Uint8 *)dma_buffers[whichab],
 					SAMPLES_PER_DMA_BUFFER*4);
-				//SDL_mutexV(current_audio->mixer_lock);
+				SDL_mutexV(current_audio->mixer_lock);
 			}
 		}
 		LWP_ThreadSleep (audioqueue);
@@ -152,7 +152,7 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
 
 	// startup conversion thread
-	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 65);
+	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 90);
 
 	// Start the first chunk of audio playing
 	DMACallback();
