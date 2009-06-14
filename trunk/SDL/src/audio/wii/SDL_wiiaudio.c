@@ -66,42 +66,22 @@ AudioThread (void *arg)
 			// Is conversion required?
 			if (current_audio->convert.needed)
 			{
-				// Dump out the conversion info.
-				// printf("----\n");
-				// printf("conversion is needed\n");
-				// printf("\tsrc_format = 0x%x\n", current_audio->convert.src_format);
-				// printf("\tdst_format = 0x%x\n", current_audio->convert.dst_format);
-				// printf("\trate_incr  = %f\n", (float) current_audio->convert.rate_incr);
-				// printf("\tbuf        = 0x%08x\n", current_audio->convert.buf);
-				// printf("\tlen        = %d\n", current_audio->convert.len);
-				// printf("\tlen_cvt    = %d\n", current_audio->convert.len_cvt);
-				// printf("\tlen_mult   = %d\n", current_audio->convert.len_mult);
-				// printf("\tlen_ratio  = %f\n", (float) current_audio->convert.len_ratio);
-
 				SDL_mutexP(current_audio->mixer_lock);
-				// Get the client to produce audio.
+				// Get the client to produce audio
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
 					current_audio->convert.buf,
 					current_audio->convert.len);
 				SDL_mutexV(current_audio->mixer_lock);
 
-				// Convert the audio.
+				// Convert the audio
 				SDL_ConvertAudio(&current_audio->convert);
 
-				// Sanity check.
-				//if (sizeof(DMABuffer) != current_audio->convert.len_cvt)
-				//{
-						//printf("The size of the DMA buffer (%u) doesn't match the converted buffer (%u)\n",
-						//sizeof(DMABuffer), current_audio->convert.len_cvt);
-				//}
-
-				// Copy from SDL buffer to DMA buffer.
+				// Copy from SDL buffer to DMA buffer
 				memcpy(dma_buffers[whichab], current_audio->convert.buf, current_audio->convert.len_cvt);
 			}
 			else
 			{
-				//printf("conversion is not needed\n");
 				SDL_mutexP(current_audio->mixer_lock);
 				current_audio->spec.callback(
 					current_audio->spec.userdata,
@@ -117,8 +97,8 @@ AudioThread (void *arg)
 }
 
 /****************************************************************************
- * MixSamples
- * This continually calls S9xMixSamples On each DMA Completion
+ * DMACallback
+ * Playback audio and signal audio thread that more samples are required
  ***************************************************************************/
 static void
 DMACallback()
