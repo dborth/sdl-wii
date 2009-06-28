@@ -38,7 +38,7 @@ static int lastY = 0;
 static Uint8 lastButtonStateA = SDL_RELEASED;
 static Uint8 lastButtonStateB = SDL_RELEASED;
 
-static SDLKey keymap[512];
+static SDLKey keymap[232];
 
 static s32 stat;
 static s32 mstat;
@@ -163,17 +163,18 @@ void WII_InitOSKeymap(_THIS)
 {
 	int i;
 
-	for (i = 0; i < SDL_arraysize(keymap); ++i)
+	for (i = 0; i < 232; ++i)
 		keymap[i] = SDLK_UNKNOWN;
 
-	//a-z
+	// a-z
 	for (i = 0; i < 27; i++)
 		keymap[4 + i] = SDLK_a + i;
 
-	//numbers
-	for (i = 0; i < 10; i++)
+	// 1-9
+	for (i = 0; i < 9; i++)
 		keymap[30 + i] = SDLK_1 + i;
 
+	keymap[39] = SDLK_0;
 	keymap[40] = SDLK_RETURN;
 	keymap[41] = SDLK_ESCAPE;
 	keymap[42] = SDLK_BACKSPACE;
@@ -182,8 +183,9 @@ void WII_InitOSKeymap(_THIS)
 	keymap[45] = SDLK_MINUS;
 	keymap[46] = SDLK_EQUALS;
 	keymap[47] = SDLK_LEFTBRACKET;
-	keymap[47] = SDLK_RIGHTBRACKET;
+	keymap[48] = SDLK_RIGHTBRACKET;
 	keymap[49] = SDLK_BACKSLASH;
+	keymap[50] = SDLK_UNKNOWN; // unused
 	keymap[51] = SDLK_SEMICOLON;
 	keymap[52] = SDLK_QUOTE;
 	keymap[53] = SDLK_BACKQUOTE;
@@ -192,10 +194,12 @@ void WII_InitOSKeymap(_THIS)
 	keymap[56] = SDLK_SLASH;
 	keymap[57] = SDLK_CAPSLOCK;
 
-	//F1 to F12
+	// F1 to F12
 	for (i = 0; i < 12; i++)
 		keymap[58 + i] = SDLK_F1 + i;
 
+	keymap[70] = SDLK_PRINT;
+	keymap[71] = SDLK_SCROLLOCK;
 	keymap[72] = SDLK_PAUSE;
 	keymap[73] = SDLK_INSERT;
 	keymap[74] = SDLK_HOME;
@@ -217,9 +221,40 @@ void WII_InitOSKeymap(_THIS)
 
 	keymap[88] = SDLK_KP_ENTER;
 
-	//keypad numbers
-	for (i = 0; i < 10; i++)
+	// keypad 1-9
+	for (i = 0; i < 9; i++)
 		keymap[89 + i] = SDLK_KP1 + i;
+
+	keymap[98] = SDLK_KP0;
+	keymap[99] = SDLK_KP_PERIOD;
+	keymap[100] = SDLK_UNKNOWN; // unused
+	keymap[101] = SDLK_UNKNOWN; // Applic
+	keymap[102] = SDLK_POWER;
+	keymap[103] = SDLK_KP_EQUALS;
+	keymap[104] = SDLK_F13;
+	keymap[105] = SDLK_F14;
+	keymap[106] = SDLK_F15;
+	keymap[107] = SDLK_UNKNOWN; // F16
+	keymap[108] = SDLK_UNKNOWN; // F17
+	keymap[109] = SDLK_UNKNOWN; // F18
+	keymap[110] = SDLK_UNKNOWN; // F19
+	keymap[111] = SDLK_UNKNOWN; // F20
+	keymap[112] = SDLK_UNKNOWN; // F21
+	keymap[113] = SDLK_UNKNOWN; // F22
+	keymap[114] = SDLK_UNKNOWN; // F23
+	keymap[115] = SDLK_UNKNOWN; // F24
+	keymap[116] = SDLK_UNKNOWN; // Execute
+	keymap[117] = SDLK_HELP;
+	keymap[118] = SDLK_MENU;
+	keymap[119] = SDLK_UNKNOWN; // Select
+	keymap[120] = SDLK_UNKNOWN; // Stop
+	keymap[121] = SDLK_UNKNOWN; // Again
+	keymap[122] = SDLK_UNDO;
+
+	keymap[134] = SDLK_KP_EQUALS;
+	// 135-143 - International
+	// 144-152 - Language
+	keymap[154] = SDLK_SYSREQ;
 
 	keymap[224] = SDLK_LCTRL;
 	keymap[225] = SDLK_LSHIFT;
