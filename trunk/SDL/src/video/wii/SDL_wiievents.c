@@ -33,13 +33,10 @@
 #include "SDL_wiivideo.h"
 #include "SDL_wiievents_c.h"
 
-int lastX = 0;
-int lastY = 0;
-Uint8 lastButtonStateA = SDL_RELEASED;
-Uint8 lastButtonStateB = SDL_RELEASED;
-
-Uint8 lastButtonStateLeftMouse = SDL_RELEASED;
-Uint8 lastButtonStateRightMouse = SDL_RELEASED;
+static int lastX = 0;
+static int lastY = 0;
+static Uint8 lastButtonStateA = SDL_RELEASED;
+static Uint8 lastButtonStateB = SDL_RELEASED;
 
 static SDLKey keymap[512];
 
@@ -78,28 +75,29 @@ void PumpEvents()
 			lastX = x;
 			lastY = y;
 		}
-	}
 
-	Uint8 stateA = SDL_RELEASED;
-	Uint8 stateB = SDL_RELEASED;
-	if (wd->btns_h & WPAD_BUTTON_A)
-	{
-		stateA = SDL_PRESSED;
-	}
-	if (wd->btns_h & WPAD_BUTTON_B)
-	{
-		stateB = SDL_PRESSED;
-	}
+		Uint8 stateA = SDL_RELEASED;
+		Uint8 stateB = SDL_RELEASED;
 
-	if (stateA != lastButtonStateA)
-	{
-		lastButtonStateA = stateA;
-		posted += SDL_PrivateMouseButton(stateA, SDL_BUTTON_LEFT, x, y);
-	}
-	if (stateB != lastButtonStateB)
-	{
-		lastButtonStateB = stateB;
-		posted += SDL_PrivateMouseButton(stateB, SDL_BUTTON_RIGHT, x, y);
+		if (wd->btns_h & WPAD_BUTTON_A)
+		{
+			stateA = SDL_PRESSED;
+		}
+		if (wd->btns_h & WPAD_BUTTON_B)
+		{
+			stateB = SDL_PRESSED;
+		}
+
+		if (stateA != lastButtonStateA)
+		{
+			lastButtonStateA = stateA;
+			posted += SDL_PrivateMouseButton(stateA, SDL_BUTTON_LEFT, x, y);
+		}
+		if (stateB != lastButtonStateB)
+		{
+			lastButtonStateB = stateB;
+			posted += SDL_PrivateMouseButton(stateB, SDL_BUTTON_RIGHT, x, y);
+		}
 	}
 
 	if (stat && (ke.type == KEYBOARD_RELEASED || ke.type == KEYBOARD_PRESSED))
