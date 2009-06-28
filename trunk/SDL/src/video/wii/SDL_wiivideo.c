@@ -56,7 +56,7 @@ static SDL_Rect* modes_descending[] =
 
 static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int whichfb = 0; // Switch
-static GXRModeObj* display_mode = 0;
+static GXRModeObj* vmode = 0;
 static unsigned char texturemem[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // GX texture
 static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
 
@@ -79,7 +79,7 @@ camera;
      This structure controls the size of the image on the screen.
 	 Think of the output as a -80 x 80 by -60 x 60 graph.
 ***/
-s16 square[] ATTRIBUTE_ALIGN (32) =
+static s16 square[] ATTRIBUTE_ALIGN (32) =
 {
   /*
    * X,   Y,  Z
@@ -173,26 +173,44 @@ WII_InitVideoSystem()
 
 	/* Initialise the video system */
 	VIDEO_Init();
-	display_mode = VIDEO_GetPreferredMode(NULL);
+	vmode = VIDEO_GetPreferredMode(NULL);
+
+	switch (vmode->viTVMode >> 2)
+	{
+		case VI_PAL: // 576 lines (PAL 50hz)
+			// display should be centered vertically (borders)
+			vmode = &TVPal574IntDfScale;
+			vmode->xfbHeight = 480;
+			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
+			vmode->viHeight = 480;
+			break;
+
+		case VI_NTSC: // 480 lines (NTSC 60hz)
+			break;
+
+		default: // 480 lines (PAL 60Hz)
+			break;
+	}
+
 	/* Set up the video system with the chosen mode */
-	VIDEO_Configure(display_mode);
+	VIDEO_Configure(vmode);
 
 	// Allocate the video buffers
-	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (display_mode));
-	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (display_mode));
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 
-	// Initialise the debug console.
-	console_init(xfb[0],20,20,display_mode->fbWidth,display_mode->xfbHeight,display_mode->fbWidth*VI_DISPLAY_PIX_SZ);
+	// Initialise the debug console
+	//console_init(xfb[0],20,20,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*VI_DISPLAY_PIX_SZ);
 
-	VIDEO_ClearFrameBuffer(display_mode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer(display_mode, xfb[1], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
 	VIDEO_SetNextFramebuffer (xfb[0]);
 
 	// Show the screen.
 	VIDEO_SetBlack(FALSE);
 	VIDEO_Flush();
 	VIDEO_WaitVSync();
-	if (display_mode->viTVMode & VI_NON_INTERLACE)
+	if (vmode->viTVMode & VI_NON_INTERLACE)
 			VIDEO_WaitVSync();
 		else
 			while (VIDEO_GetNextField())
@@ -207,15 +225,15 @@ WII_InitVideoSystem()
 	GXColor background = { 0, 0, 0, 0xff };
 	GX_SetCopyClear (background, 0x00ffffff);
 
-	GX_SetViewport (0, 0, display_mode->fbWidth, display_mode->efbHeight, 0, 1);
-	GX_SetDispCopyYScale ((f32) display_mode->xfbHeight / (f32) display_mode->efbHeight);
-	GX_SetScissor (0, 0, display_mode->fbWidth, display_mode->efbHeight);
+	GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
+	GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
+	GX_SetScissor (0, 0, vmode->fbWidth, vmode->efbHeight);
 
-	GX_SetDispCopySrc (0, 0, display_mode->fbWidth, display_mode->efbHeight);
-	GX_SetDispCopyDst (display_mode->fbWidth, display_mode->xfbHeight);
-	GX_SetCopyFilter (display_mode->aa, display_mode->sample_pattern, (df == 1) ? GX_TRUE : GX_FALSE, display_mode->vfilter); // deflicker ON only for filtered mode
+	GX_SetDispCopySrc (0, 0, vmode->fbWidth, vmode->efbHeight);
+	GX_SetDispCopyDst (vmode->fbWidth, vmode->xfbHeight);
+	GX_SetCopyFilter (vmode->aa, vmode->sample_pattern, (df == 1) ? GX_TRUE : GX_FALSE, vmode->vfilter); // deflicker ON only for filtered mode
 
-	GX_SetFieldMode (display_mode->field_rendering, ((display_mode->viHeight == 2 * display_mode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
+	GX_SetFieldMode (vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
 	GX_SetPixelFmt (GX_PF_RGB8_Z24, GX_ZC_LINEAR);
 	GX_SetDispCopyGamma (GX_GM_1_0);
 	GX_SetCullMode (GX_CULL_NONE);
@@ -231,8 +249,8 @@ WII_InitVideoSystem()
 int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
 {
 	// Set up the modes.
-	mode_640.w = display_mode->fbWidth;
-	mode_640.h = display_mode->xfbHeight;
+	mode_640.w = vmode->fbWidth;
+	mode_640.h = vmode->xfbHeight;
 	mode_320.w = mode_640.w / 2;
 	mode_320.h = mode_640.h / 2;
 
@@ -459,7 +477,6 @@ static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 
 static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
 {
-
 	int new_pitch = this->hidden->width * 2;
 	long long int *dst = (long long int *) texturemem;
 	long long int *src1 = (long long int *) textureconvert;
@@ -488,7 +505,6 @@ static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
 			*ptr_cv++ = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 		}
 	}
-
 
 	// same as 16bit
 	for (h = 0; h < this->hidden->height; h += 4)
