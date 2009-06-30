@@ -86,7 +86,7 @@ typedef struct joystick_hwdata_t
 		joystick_paddata gamecube;
 		joystick_wpaddata wiimote;
 	};
-}joystick_hwdata;
+} joystick_hwdata;
 
 static const u32 sdl_buttons_wii[] =
 {
@@ -132,7 +132,7 @@ static int __numgcjoysticks = 4;
 static int __num_joysticks_open = 0;
 
 /* Helpers to separate nunchuk vs classic buttons which share the
- * same scan codes. In particular, up on the classic controller is 
+ * same scan codes. In particular, up on the classic controller is
  * the same as Z on the nunchuk. The numbers refer to the sdl_buttons_wii
  * list above. */
 static int wii_button_is_nunchuk(int idx)
@@ -190,7 +190,7 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 		return(-1);
 	}
 	SDL_memset(joystick->hwdata, 0, sizeof(joystick_hwdata));
-	if((joystick->index < 4) && (__jspad_enabled))
+	if((joystick->index < 4) && (__jswpad_enabled))
 	{
 		if(joystick->index < __numwiijoysticks)
 		{
@@ -318,7 +318,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 		if ( (exp_type == WPAD_EXP_CLASSIC && wii_button_is_nunchuk(i)) ||
 				(exp_type == WPAD_EXP_NUNCHUK && wii_button_is_classic(i)) )
 			continue;
-			
+
 		if (changed & sdl_buttons_wii[i])
 			SDL_PrivateJoystickButton(joystick, i,
 				(buttons & sdl_buttons_wii[i]) ? SDL_PRESSED : SDL_RELEASED);
@@ -477,8 +477,9 @@ static void _HandleGCJoystickUpdate(SDL_Joystick* joystick)
 
 void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 {
-	if(!joystick)
-	return;
+	if(!joystick || !joystick->hwdata)
+		return;
+
 	switch(((joystick_hwdata*)(joystick->hwdata))->type)
 	{
 		case 0:
@@ -497,8 +498,10 @@ void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 /* Function to close a joystick after use */
 void SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 {
-	if (joystick->hwdata != NULL)
-		SDL_free(joystick->hwdata);
+	if(!joystick || !joystick->hwdata) // joystick already closed
+		return;
+
+	SDL_free(joystick->hwdata);
 
 	/* Clear callback again */
 	__num_joysticks_open--;
