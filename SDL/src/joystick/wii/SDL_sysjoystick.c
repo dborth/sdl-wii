@@ -129,8 +129,6 @@ static int __jspad_enabled = 1;
 static int __numwiijoysticks = 4;
 static int __numgcjoysticks = 4;
 
-static int __num_joysticks_open = 0;
-
 /* Helpers to separate nunchuk vs classic buttons which share the
  * same scan codes. In particular, up on the classic controller is
  * the same as Z on the nunchuk. The numbers refer to the sdl_buttons_wii
@@ -165,14 +163,6 @@ const char *SDL_SYS_JoystickName(int index)
 	else if((index < 8) && (__jspad_enabled) && (index < (__numgcjoysticks + 4)) && (index> 3))
 	sprintf(joy_name, "Gamecube %d", index);
 	return (const char *)joy_name;
-}
-
-
-static void
-UpdatePadsCB()
-{
-	WPAD_ScanPads();
-	PAD_ScanPads();
 }
 
 /* Function to open a joystick for use.
@@ -212,12 +202,6 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 			joystick->nhats = MAX_GC_HATS;
 		}
 	}
-
-	/* Update pads at vertical retrace */
-	if(__num_joysticks_open == 0)
-		VIDEO_SetPostRetraceCallback ((VIRetraceCallback)UpdatePadsCB);
-	__num_joysticks_open++;
-
 	return(0);
 }
 
@@ -480,6 +464,9 @@ void SDL_SYS_JoystickUpdate(SDL_Joystick *joystick)
 	if(!joystick || !joystick->hwdata)
 		return;
 
+	WPAD_ScanPads();
+	PAD_ScanPads();
+
 	switch(((joystick_hwdata*)(joystick->hwdata))->type)
 	{
 		case 0:
@@ -502,11 +489,6 @@ void SDL_SYS_JoystickClose(SDL_Joystick *joystick)
 		return;
 
 	SDL_free(joystick->hwdata);
-
-	/* Clear callback again */
-	__num_joysticks_open--;
-	if (__num_joysticks_open == 0)
-		VIDEO_SetPostRetraceCallback (NULL);
 }
 
 /* Function to perform any system-specific joystick related cleanup */
