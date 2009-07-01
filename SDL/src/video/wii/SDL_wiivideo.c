@@ -583,7 +583,7 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 
 static void WII_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
-	WII_FlipHWSurface(_THIS, _THIS->screen);
+	WII_FlipHWSurface(this, this->screen);
 }
 
 int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
