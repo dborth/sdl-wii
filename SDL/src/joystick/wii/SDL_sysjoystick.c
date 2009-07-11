@@ -208,9 +208,8 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 	return(0);
 }
 
-static s16 WPAD_Orient(u8 chan, int motion)
+static s16 WPAD_Orient(WPADData *data, int motion)
 {
-	WPADData *data = WPAD_Data(chan);
 	float out;
 
 	if (motion == 0)
@@ -223,26 +222,25 @@ static s16 WPAD_Orient(u8 chan, int motion)
 	return (s16)((out / 180.0) * 128.0);
 }
 
-static s16 WPAD_Pitch(u8 chan)
+static s16 WPAD_Pitch(WPADData *data)
 {
-	return WPAD_Orient(chan, 0);
+	return WPAD_Orient(data, 0);
 }
 
-static s16 WPAD_Roll(u8 chan)
+static s16 WPAD_Roll(WPADData *data)
 {
-	return WPAD_Orient(chan, 1);
+	return WPAD_Orient(data, 1);
 }
 
-static s16 WPAD_Yaw(u8 chan)
+static s16 WPAD_Yaw(WPADData *data)
 {
-	return WPAD_Orient(chan, 2);
+	return WPAD_Orient(data, 2);
 }
 
-static s16 WPAD_Stick(u8 chan, u8 right, int axis)
+static s16 WPAD_Stick(WPADData *data, u8 right, int axis)
 {
 	float mag = 0.0;
 	float ang = 0.0;
-	WPADData *data = WPAD_Data(chan);
 
 	switch (data->exp.type)
 	{
@@ -292,13 +290,15 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 	struct expansion_t exp;
 	int i, axis;
 	joystick_hwdata *prev_state;
+	WPADData *data;
 
 	buttons = WPAD_ButtonsHeld(joystick->index);
 
 	if (WPAD_Probe(joystick->index, &exp_type) != 0)
 		exp_type = WPAD_EXP_NONE;
 
-	WPAD_Expansion(joystick->index, &exp);
+	 data = WPAD_Data(joystick->index);
+	 WPAD_Expansion(joystick->index, &exp);
 
 	prev_state = (joystick_hwdata *)joystick->hwdata;
 	prev_buttons = prev_state->wiimote.prev_buttons;
@@ -344,7 +344,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 
 	if(exp_type == WPAD_EXP_CLASSIC)
 	{
-		axis = WPAD_Stick(joystick->index, 0, 0);
+		axis = WPAD_Stick(data, 0, 0);
 		if(prev_state->wiimote.classicL_stickX != axis)
 		{
 			s16 value;
@@ -354,7 +354,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 			SDL_PrivateJoystickAxis(joystick, 0, value);
 			prev_state->wiimote.classicL_stickX = axis;
 		}
-		axis = WPAD_Stick(joystick->index, 0, 1);
+		axis = WPAD_Stick(data, 0, 1);
 		if(prev_state->wiimote.classicL_stickY != axis)
 		{
 			s16 value;
@@ -364,13 +364,13 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 			SDL_PrivateJoystickAxis(joystick, 1, -value);
 			prev_state->wiimote.classicL_stickY = axis;
 		}
-		axis = WPAD_Stick(joystick->index, 1, 0);
+		axis = WPAD_Stick(data, 1, 0);
 		if(prev_state->wiimote.classicR_stickX != axis)
 		{
 			SDL_PrivateJoystickAxis(joystick, 2, axis << 8);
 			prev_state->wiimote.classicR_stickX = axis;
 		}
-		axis = WPAD_Stick(joystick->index, 1, 1);
+		axis = WPAD_Stick(data, 1, 1);
 		if(prev_state->wiimote.classicR_stickY != axis)
 		{
 			SDL_PrivateJoystickAxis(joystick, 3, -(axis << 8));
@@ -391,7 +391,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 	}
 	else if(exp_type == WPAD_EXP_NUNCHUK)
 	{
-		axis = WPAD_Stick(joystick->index, 0, 0);
+		axis = WPAD_Stick(data, 0, 0);
 		if(prev_state->wiimote.nunchuk_stickX != axis)
 		{
 			s16 value;
@@ -401,7 +401,7 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 			SDL_PrivateJoystickAxis(joystick, 0, value);
 			prev_state->wiimote.nunchuk_stickX = axis;
 		}
-		axis = WPAD_Stick(joystick->index, 0, 1);
+		axis = WPAD_Stick(data, 0, 1);
 		if(prev_state->wiimote.nunchuk_stickY != axis)
 		{
 			s16 value;
@@ -413,19 +413,19 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 		}
 	}
 
-	axis = WPAD_Pitch(joystick->index);
+	axis = WPAD_Pitch(data);
 	if(prev_state->wiimote.wiimote_pitch != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 6, -(axis << 8));
 		prev_state->wiimote.wiimote_pitch = axis;
 	}
-	axis = WPAD_Roll(joystick->index);
+	axis = WPAD_Roll(data);
 	if(prev_state->wiimote.wiimote_roll != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 7, axis << 8);
 		prev_state->wiimote.wiimote_roll = axis;
 	}
-	axis = WPAD_Yaw(joystick->index);
+	axis = WPAD_Yaw(data);
 	if(prev_state->wiimote.wiimote_yaw != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 8, axis << 8);
