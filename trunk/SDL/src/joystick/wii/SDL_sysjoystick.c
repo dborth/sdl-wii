@@ -43,7 +43,7 @@
 #define MAX_GC_BUTTONS		8
 #define	MAX_GC_HATS			1
 
-#define MAX_WII_AXES		6
+#define MAX_WII_AXES		9
 #define MAX_WII_BUTTONS		20
 #define	MAX_WII_HATS		1
 
@@ -74,6 +74,9 @@ typedef struct joystick_wpaddata_t
 	s8 classicR_stickY;
 	u8 classic_triggerL;
 	u8 classic_triggerR;
+	s8 wiimote_pitch;
+	s8 wiimote_roll;
+	s8 wiimote_yaw;
 }joystick_wpaddata;
 
 /* The private structure used to keep track of a joystick */
@@ -203,6 +206,36 @@ int SDL_SYS_JoystickOpen(SDL_Joystick *joystick)
 		}
 	}
 	return(0);
+}
+
+static s16 WPAD_Orient(u8 chan, int motion)
+{
+	WPADData *data = WPAD_Data(chan);
+	float out;
+
+	if (motion == 0)
+		out = data->orient.pitch;
+	else if (motion == 1)
+		out = data->orient.roll;
+	else
+		out = data->orient.yaw;
+
+	return (s16)((out / 180.0) * 128.0);
+}
+
+static s16 WPAD_Pitch(u8 chan)
+{
+	return WPAD_Orient(chan, 0);
+}
+
+static s16 WPAD_Roll(u8 chan)
+{
+	return WPAD_Orient(chan, 1);
+}
+
+static s16 WPAD_Yaw(u8 chan)
+{
+	return WPAD_Orient(chan, 2);
 }
 
 static s16 WPAD_Stick(u8 chan, u8 right, int axis)
@@ -378,6 +411,25 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 			SDL_PrivateJoystickAxis(joystick, 1, -value);
 			prev_state->wiimote.nunchuk_stickY = axis;
 		}
+	}
+
+	axis = WPAD_Pitch(joystick->index);
+	if(prev_state->wiimote.wiimote_pitch != axis)
+	{
+		SDL_PrivateJoystickAxis(joystick, 6, -(axis << 8));
+		prev_state->wiimote.wiimote_pitch = axis;
+	}
+	axis = WPAD_Roll(joystick->index);
+	if(prev_state->wiimote.wiimote_roll != axis)
+	{
+		SDL_PrivateJoystickAxis(joystick, 7, axis << 8);
+		prev_state->wiimote.wiimote_roll = axis;
+	}
+	axis = WPAD_Yaw(joystick->index);
+	if(prev_state->wiimote.wiimote_yaw != axis)
+	{
+		SDL_PrivateJoystickAxis(joystick, 8, axis << 8);
+		prev_state->wiimote.wiimote_yaw = axis;
 	}
 }
 
