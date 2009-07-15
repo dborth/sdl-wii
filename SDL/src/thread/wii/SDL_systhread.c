@@ -48,7 +48,7 @@ void *run_thread(void *data)
 
 int SDL_SYS_CreateThread(SDL_Thread *thread, void *args)
 {
-	LWP_CreateThread(&thread->handle, run_thread, args, 0, 0, 10);
+	LWP_CreateThread(&thread->handle, run_thread, args, 0, 0, 80);
 	return (0);
 }
 
