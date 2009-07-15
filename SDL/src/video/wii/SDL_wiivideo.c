@@ -69,9 +69,9 @@ static Mtx view;
 /* New texture based scaler */
 typedef struct tagcamera
 {
-	Vector pos;
-	Vector up;
-	Vector view;
+	guVector pos;
+	guVector up;
+	guVector view;
 }
 camera;
 
