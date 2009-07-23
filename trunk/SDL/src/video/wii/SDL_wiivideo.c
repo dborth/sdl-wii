@@ -26,8 +26,6 @@
 // SDL internal includes.
 #include "../SDL_sysvideo.h"
 #include "../SDL_pixels_c.h"
-#include "SDL_timer.h"
-#include "SDL_thread.h"
 
 // SDL Wii specifics.
 #include <gccore.h>
@@ -39,8 +37,6 @@
 #include "SDL_wiievents_c.h"
 
 static const char	WIIVID_DRIVER_NAME[] = "wii";
-static SDL_Thread * videothread;
-static SDL_mutex * videomutex;
 
 /*** SDL ***/
 static SDL_Rect mode_320;
@@ -62,6 +58,7 @@ static unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 static int whichfb = 0; // Switch
 static GXRModeObj* vmode = 0;
 static unsigned char texturemem[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // GX texture
+static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
 
 /*** GX ***/
 #define DEFAULT_FIFO_SIZE 256 * 1024
@@ -105,7 +102,7 @@ static camera cam = {
  * Scaler Support Functions
  ***************************************************************************/
 static void
-draw_init (SDL_Surface *current, int bpp)
+draw_init (SDL_Surface *current)
 {
 	GX_ClearVtxDesc ();
 	GX_SetVtxDesc (GX_VA_POS, GX_INDEX8);
@@ -133,10 +130,10 @@ draw_init (SDL_Surface *current, int bpp)
 	GX_InvVtxCache ();	// update vertex cache
 
 	// initialize the texture obj we are going to use
-	if (bpp == 8 || bpp == 16)
-		GX_InitTexObj (&texobj, texturemem, current->w, current->h, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
-	else
-		GX_InitTexObj (&texobj, texturemem, current->w, current->h, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	GX_InitTexObj (&texobj, texturemem, current->w, current->h, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+
+	// force texture filtering OFF
+	//GX_InitTexObjLOD(&texobj,GX_NEAR,GX_NEAR_MIP_NEAR,2.5,9.0,0.0,GX_FALSE,GX_FALSE,GX_ANISO_1); // original/unfiltered video mode: force texture filtering OFF
 
 	GX_LoadTexObj (&texobj, GX_TEXMAP0);	// load texture object so its ready to use
 }
@@ -166,41 +163,6 @@ draw_square (Mtx v)
 	draw_vert (2, 0, 1.0, 1.0);
 	draw_vert (3, 0, 0.0, 1.0);
 	GX_End ();
-}
-
-static int quit_flip_thread = 0;
-int flip_thread(void * arg)
-{
-	while(1)
-	{
-		if (quit_flip_thread)
-			break;
-
-		whichfb ^= 1;
-
-		SDL_mutexP(videomutex);
-
-		// clear texture objects
-		GX_InvVtxCache();
-		GX_InvalidateTexAll();
-
-		// load texture into GX
-		DCFlushRange(texturemem, TEXTUREMEM_SIZE);
-
-		GX_SetNumChans(1);
-		GX_LoadTexObj(&texobj, GX_TEXMAP0);
-
-		draw_square(view); // render textured quad
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
-		GX_DrawDone ();
-
-		SDL_mutexV(videomutex);
-
-		VIDEO_SetNextFramebuffer(xfb[whichfb]);
-		VIDEO_Flush();
-		VIDEO_WaitVSync();
-	}
-	return 0;
 }
 
 void
@@ -337,9 +299,9 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 		return NULL;
 	}
 
-	if(bpp != 8 && bpp != 16 && bpp != 24 && bpp != 32)
+	if(bpp != 8 && bpp != 16 && bpp != 24)
 	{
-		SDL_SetError("Resolution (%d bpp) is unsupported (8/16/24/32 bpp only).",
+		SDL_SetError("Resolution (%d bpp) is unsupported (8/16/24 bpp only).",
 			bpp);
 		return NULL;
 	}
@@ -375,7 +337,7 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	SDL_memset(this->hidden->buffer, 0, width * height * bytes_per_pixel);
 
 	// Set up the new mode framebuffer
-	current->flags = (flags & SDL_DOUBLEBUF) | (flags & SDL_FULLSCREEN) | (flags & SDL_HWPALETTE);
+	current->flags = SDL_DOUBLEBUF | (flags & SDL_FULLSCREEN) | (flags & SDL_HWPALETTE);
 	current->w = width;
 	current->h = height;
 	current->pitch = current->w * bytes_per_pixel;
@@ -386,8 +348,8 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	this->hidden->height = current->h;
 	this->hidden->pitch = current->pitch;
 
-	draw_init(current, bpp);
-	videothread = SDL_CreateThread(flip_thread, NULL);
+	draw_init(current);
+
 	/* We're done */
 	return(current);
 }
@@ -413,134 +375,215 @@ static void WII_UnlockHWSurface(_THIS, SDL_Surface *surface)
 	return;
 }
 
-static inline void Set_RGBAPixel(_THIS, int x, int y, u32 color) {
-    u8 *truc = (u8*)texturemem;
-    int width = this->hidden->width;
-    u32 offset;
-
-    offset = (((y >> 2)<<4)*width) + ((x >> 2)<<6) + (((y%4 << 2) + x%4 ) <<1);
-
-    *(truc+offset)=color & 0xFF;
-    *(truc+offset+1)=(color>>24) & 0xFF;
-    *(truc+offset+32)=(color>>16) & 0xFF;
-    *(truc+offset+33)=(color>>8) & 0xFF;
-}
-
-static inline void Set_RGB565Pixel(_THIS, int x, int y, u16 color) {
-    u8 *truc = (u8*)texturemem;
-    int width = this->hidden->width;
-    u32 offset;
-
-    offset = (((y >> 2)<<3)*width) + ((x >> 2)<<5) + (((y%4 << 2) + x%4 ) <<1);
-
-    *(truc+offset)=(color>> 8) & 0xFF;
-    *(truc+offset+1)=color & 0xFF;
-}
-
-static void UpdateRect_8(_THIS, SDL_Rect *rect)
+static void flipHWSurface_8_16(_THIS, SDL_Surface *surface)
 {
-	u8 *src;
-	u8 *ptr;
-	u16 color;
-	int i, j;
+	int new_pitch = this->hidden->width * 2;
+	long long int *dst = (long long int *) texturemem;
+	long long int *src1 = (long long int *) textureconvert;
+	long long int *src2 = (long long int *) (textureconvert + new_pitch);
+	long long int *src3 = (long long int *) (textureconvert + (new_pitch * 2));
+	long long int *src4 = (long long int *) (textureconvert + (new_pitch * 3));
+	int rowpitch = (new_pitch >> 3) * 3;
+	int rowadjust = (new_pitch % 8) * 4;
 	Uint16 *palette = this->hidden->palette;
-	for(i = 0; i < rect->h; i++) {
-		src = (this->hidden->buffer + (this->hidden->width*(i+rect->y)) + (rect->x));
-		for (j = 0; j < rect->w; j++) {
-			ptr = src + j;
-			color = palette[*ptr];
-			Set_RGB565Pixel(this, rect->x + j, rect->y + i, color);
+	char *ra = NULL;
+	int h, w;
+
+	// crude convert
+	Uint16 * ptr_cv = (Uint16 *) textureconvert;
+	Uint8 *ptr = (Uint8 *)this->hidden->buffer;
+
+	for (h = 0; h < this->hidden->height; h++)
+	{
+		for (w = 0; w < this->hidden->width; w++)
+		{
+			Uint16 v = palette[*ptr];
+
+			*ptr_cv++ = v;
+			ptr++;
+		}
+	}
+
+	// same as 16bit
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < (this->hidden->width >> 2); w++)
+		{
+			*dst++ = *src1++;
+			*dst++ = *src2++;
+			*dst++ = *src3++;
+			*dst++ = *src4++;
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+
+		if ( rowadjust )
+		{
+			ra = (char *)src1;
+			src1 = (long long int *)(ra + rowadjust);
+			ra = (char *)src2;
+			src2 = (long long int *)(ra + rowadjust);
+			ra = (char *)src3;
+			src3 = (long long int *)(ra + rowadjust);
+			ra = (char *)src4;
+			src4 = (long long int *)(ra + rowadjust);
 		}
 	}
 }
 
-static void UpdateRect_16(_THIS, SDL_Rect *rect)
+static void flipHWSurface_16_16(_THIS, SDL_Surface *surface)
 {
-	u8 *src;
-	u8 *ptr;
-	u16 color;
-	int i, j;
-	for(i = 0; i < rect->h; i++) {
-		src = (this->hidden->buffer + (this->hidden->width*2*(i+rect->y)) + (rect->x*2));
-		for (j = 0; j < rect->w; j++) {
-			ptr = src + (j*2);
-			color = (ptr[0] << 8) | ptr[1];
-			Set_RGB565Pixel(this, rect->x + j, rect->y + i, color);
+	int h, w;
+	long long int *dst = (long long int *) texturemem;
+	long long int *src1 = (long long int *) this->hidden->buffer;
+	long long int *src2 = (long long int *) (this->hidden->buffer + this->hidden->pitch);
+	long long int *src3 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 2));
+	long long int *src4 = (long long int *) (this->hidden->buffer + (this->hidden->pitch * 3));
+	int rowpitch = (this->hidden->pitch >> 3) * 3;
+	int rowadjust = (this->hidden->pitch % 8) * 4;
+	char *ra = NULL;
+
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < this->hidden->width; w += 4)
+		{
+			*dst++ = *src1++;
+			*dst++ = *src2++;
+			*dst++ = *src3++;
+			*dst++ = *src4++;
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+
+		if ( rowadjust )
+		{
+			ra = (char *)src1;
+			src1 = (long long int *)(ra + rowadjust);
+			ra = (char *)src2;
+			src2 = (long long int *)(ra + rowadjust);
+			ra = (char *)src3;
+			src3 = (long long int *)(ra + rowadjust);
+			ra = (char *)src4;
+			src4 = (long long int *)(ra + rowadjust);
 		}
 	}
 }
 
-static void UpdateRect_24(_THIS, SDL_Rect *rect)
+static void flipHWSurface_24_16(_THIS, SDL_Surface *surface)
 {
-	u8 *src;
-	u8 *ptr;
-	u32 color;
-	int i, j;
-	for(i = 0; i < rect->h; i++) {
-		src = (this->hidden->buffer + (this->hidden->width*3*(i+rect->y)) + (rect->x*3));
-		for (j = 0; j < rect->w; j++) {
-			ptr = src + (j*3);
-			color = (ptr[0] << 24) | (ptr[1] << 16) | (ptr[2] << 8) | 0xff;
-			Set_RGBAPixel(this, rect->x + j, rect->y + i, color);
+	int new_pitch = this->hidden->width * 2;
+	long long int *dst = (long long int *) texturemem;
+	long long int *src1 = (long long int *) textureconvert;
+	long long int *src2 = (long long int *) (textureconvert + new_pitch);
+	long long int *src3 = (long long int *) (textureconvert + (new_pitch * 2));
+	long long int *src4 = (long long int *) (textureconvert + (new_pitch * 3));
+	int rowpitch = (new_pitch >> 3) * 3;
+	int rowadjust = (new_pitch % 8) * 4;
+	char *ra = NULL;
+	int h, w;
+	Uint8 r,g,b;
+
+	// crude convert
+	Uint16 * ptr_cv = (Uint16 *) textureconvert;
+	Uint8 *ptr = (Uint8 *)this->hidden->buffer;
+
+	for (h = 0; h < this->hidden->height; h++)
+	{
+		for (w = 0; w < this->hidden->width; w++)
+		{
+
+			r = *ptr++;
+			g = *ptr++;
+			b = *ptr++;
+
+			*ptr_cv++ = ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
+		}
+	}
+
+	// same as 16bit
+	for (h = 0; h < this->hidden->height; h += 4)
+	{
+		for (w = 0; w < (this->hidden->width >> 2); w++)
+		{
+			*dst++ = *src1++;
+			*dst++ = *src2++;
+			*dst++ = *src3++;
+			*dst++ = *src4++;
+		}
+
+		src1 += rowpitch;
+		src2 += rowpitch;
+		src3 += rowpitch;
+		src4 += rowpitch;
+
+		if ( rowadjust )
+		{
+			ra = (char *)src1;
+			src1 = (long long int *)(ra + rowadjust);
+			ra = (char *)src2;
+			src2 = (long long int *)(ra + rowadjust);
+			ra = (char *)src3;
+			src3 = (long long int *)(ra + rowadjust);
+			ra = (char *)src4;
+			src4 = (long long int *)(ra + rowadjust);
 		}
 	}
 }
 
-static void UpdateRect_32(_THIS, SDL_Rect *rect)
+// TO DO
+static void flipHWSurface_32_16(_THIS, SDL_Surface *surface)
 {
-	u8 *src;
-	u8 *ptr;
-	u32 color;
-	int i, j;
-	for(i = 0; i < rect->h; i++) {
-		src = (this->hidden->buffer + (this->hidden->width*4*(i+rect->y)) + (rect->x*4));
-		for (j = 0; j < rect->w; j++) {
-			ptr = src + (j*4);
-			color = (ptr[1] << 24) | (ptr[2] << 16) | (ptr[3] << 8) | ptr[0];
-			Set_RGBAPixel(this, rect->x + j, rect->y + i, color);
-		}
-	}
+
+
 }
 
-static void WII_UpdateRect(_THIS, SDL_Rect *rect)
+
+static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 {
-	const SDL_Surface* const screen = this->screen;
-	SDL_mutexP(videomutex);
-	switch(screen->format->BytesPerPixel) {
+	whichfb ^= 1;
+
+	// clear texture objects
+	GX_InvVtxCache();
+	GX_InvalidateTexAll();
+
+	switch(surface->format->BytesPerPixel)
+	{
 	case 1:
-		UpdateRect_8(this, rect);
-		break;
+		flipHWSurface_8_16(this, surface); break;
 	case 2:
-		UpdateRect_16(this, rect);
-		break;
+		flipHWSurface_16_16(this, surface); break;
 	case 3:
-		UpdateRect_24(this, rect);
-		break;
+		flipHWSurface_24_16(this, surface); break;
 	case 4:
-		UpdateRect_32(this, rect);
-		break;
+		flipHWSurface_32_16(this, surface); break;
 	default:
-		fprintf(stderr, "Invalid BPP %d\n", screen->format->BytesPerPixel);
-		break;
+		return -1;
 	}
-	SDL_mutexV(videomutex);
+
+	// load texture into GX
+	DCFlushRange(texturemem, TEXTUREMEM_SIZE);
+
+	GX_SetNumChans(1);
+	GX_LoadTexObj(&texobj, GX_TEXMAP0);
+
+	draw_square(view); // render textured quad
+	GX_CopyDisp(xfb[whichfb], GX_TRUE);
+	GX_DrawDone ();
+	VIDEO_SetNextFramebuffer(xfb[whichfb]);
+	VIDEO_Flush();
+
+	return(1);
 }
 
 static void WII_UpdateRects(_THIS, int numrects, SDL_Rect *rects)
 {
 
-	int i;
-	for (i = 0; i < numrects; i++)
-	{
-		WII_UpdateRect(this, &rects[i]);
-	}
-}
-
-static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
-{
-	SDL_Rect screen_rect = {0, 0, surface->w, surface->h};
-	WII_UpdateRect(this, &screen_rect);
-	return 1;
 }
 
 int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
@@ -565,8 +608,6 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 
 void WII_VideoQuit(_THIS)
 {
-	quit_flip_thread = 1;
-	SDL_WaitThread(videothread, NULL);
 	GX_AbortFrame();
 	GX_Flush();
 
@@ -599,8 +640,6 @@ static SDL_VideoDevice *WII_CreateDevice(int devindex)
 		return(0);
 	}
 	SDL_memset(device->hidden, 0, (sizeof *device->hidden));
-
-	videomutex = SDL_CreateMutex();
 
 	/* Set the function pointers */
 	device->VideoInit = WII_VideoInit;
