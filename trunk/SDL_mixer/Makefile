@@ -17,8 +17,8 @@ SRC_DIR			:= src
 INCLUDE_DIR		:= include
 TEST_OBJ_DIR		:= $(OBJ_DIR)/test
 TEST_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
-INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
+INSTALL_HEADER_DIR	?= $(LIBOGC_INC)
+INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
 
 # Tools.
 PIPE_TO_SED := 2>&1 | sed "s/:\([0-9]*\):/\(\1\) :/"
@@ -82,7 +82,7 @@ $(INCLUDE_DIR)/SDL_mixer.h: $(SRC_DIR)/SDL_mixer.h
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
-INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL -I$(DEVKITPRO)/libogc/include/mpeg -I$(DEVKITPRO)/libsmpeg/include -Isrc/mikmod -Isrc/timidity
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/mpeg -I$(DEVKITPRO)/libsmpeg/include -Isrc/mikmod -Isrc/timidity
 # -include sys/wait.h 
 # -include sys/syslimits.h
 # -Isrc/native_midi
@@ -94,7 +94,7 @@ DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD 
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -L$(DEVKITPRO)/libsmpeg/lib -lSDL_mixer -lsmpeg -lSDL -lfat -lwiiuse -lbte -logc -lm -ltremor
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(DEVKITPRO)/libsmpeg/lib -lSDL_mixer -lsmpeg -lSDL -lfat -lwiiuse -lbte -logc -lm -ltremor
 
 # How to link an ELF.
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_mixer.a $(DEVKITPRO)/libSDL/lib/libSDL.a

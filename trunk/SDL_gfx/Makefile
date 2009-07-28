@@ -17,8 +17,8 @@ SRC_DIR			:= src
 INCLUDE_DIR		:= include
 TEST_OBJ_DIR		:= $(OBJ_DIR)/test
 TEST_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
-INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
+INSTALL_HEADER_DIR	?= $(LIBOGC_INC)
+INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
 
 # Tools.
 PIPE_TO_SED := 2>&1 | sed "s/:\([0-9]*\):/\(\1\) :/"
@@ -58,7 +58,7 @@ headers:
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
-INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
