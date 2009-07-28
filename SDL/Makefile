@@ -15,8 +15,8 @@ LIB_DIR			:= lib
 BIN_DIR			:= bin/wii
 SDL_OBJ_DIR		:= $(OBJ_DIR)/sdl
 SDL_SRC_DIR		:= src
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
-INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
+INSTALL_HEADER_DIR	?= $(LIBOGC_INC)
+INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
 
 # Tools.
 PIPE_TO_SED := 2>&1 | sed "s/:\([0-9]*\):/\(\1\) :/"
@@ -89,12 +89,12 @@ $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -Wall $(MACHDEP) 
-INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC)
 DEFINES			:= -DGEKKO
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -lwiikeyboard -lfat -lwiiuse -lbte -logc -lm 
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL -lwiikeyboard -lfat -lwiiuse -lbte -logc -lm 
 
 # How to compile C file (SDL library).
 $(SDL_OBJ_DIR)/%.o: $(SDL_SRC_DIR)/%.c

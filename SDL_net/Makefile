@@ -15,8 +15,8 @@ LIB_DIR			:= lib
 BIN_DIR			:= bin
 SRC_DIR			:= src
 INCLUDE_DIR		:= include
-INSTALL_HEADER_DIR	?= $(DEVKITPRO)/libogc/include
-INSTALL_LIB_DIR		?= $(DEVKITPRO)/libogc/lib/wii
+INSTALL_HEADER_DIR	?= $(LIBOGC_INC)
+INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
 
 # Tools.
 PIPE_TO_SED := 2>&1 | sed "s/:\([0-9]*\):/\(\1\) :/"
@@ -56,7 +56,7 @@ $(INCLUDE_DIR)/SDL_net.h: $(SRC_DIR)/SDL_net.h
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
-INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(DEVKITPRO)/libogc/include/SDL
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL
 # -include sys/wait.h 
 # -include sys/syslimits.h
 
@@ -65,7 +65,7 @@ DEFINES			:= -DGEKKO
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -lfat -lwiiuse -lbte -logc -lm
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL -lfat -lwiiuse -lbte -logc -lm
 
 # How to compile C file (SDL library).
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
