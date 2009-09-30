@@ -62,8 +62,8 @@ int main(int argc, char *argv[])
 	PAD_Init();
 	WII_InitVideoSystem();
 #ifdef HW_RVL
-	WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
-	WPAD_SetVRes(0, 640, 480);
+	WPAD_SetDataFormat(WPAD_CHAN_ALL,WPAD_FMT_BTNS_ACC_IR);
+	WPAD_SetVRes(WPAD_CHAN_ALL, 640, 480);
 
 	MOUSE_Init();
 	KEYBOARD_Init(NULL);
