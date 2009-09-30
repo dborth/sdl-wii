@@ -213,7 +213,7 @@ SetupGX()
 {
 	Mtx44 p;
 	int df = 1;
-	
+
 	GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
 	GX_SetScissor (0, 0, vmode->fbWidth, vmode->efbHeight);
@@ -404,8 +404,8 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	this->hidden->height = current->h;
 	this->hidden->pitch = current->pitch;
 
-	currentwidth = currentsurface->w;
-	currentheight = currentsurface->h;
+	currentwidth = current->w;
+	currentheight = current->h;
 	currentbpp = bpp;
 	draw_init();
 	StartVideoThread();
