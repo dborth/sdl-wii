@@ -207,6 +207,9 @@ int flip_thread(void * arg)
 static void
 SetupGX()
 {
+	Mtx44 p;
+	int df = 1;
+	
 	GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
 	GX_SetScissor (0, 0, vmode->fbWidth, vmode->efbHeight);
@@ -241,9 +244,6 @@ StartVideoThread()
 void
 WII_InitVideoSystem()
 {
-	Mtx44 p;
-	int df = 1;
-
 	/* Initialise the video system */
 	VIDEO_Init();
 	vmode = VIDEO_GetPreferredMode(NULL);
@@ -271,9 +271,6 @@ WII_InitVideoSystem()
 	// Allocate the video buffers
 	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
 	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
-
-	// Initialise the debug console
-	//console_init(xfb[0],20,20,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*VI_DISPLAY_PIX_SZ);
 
 	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
 	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
