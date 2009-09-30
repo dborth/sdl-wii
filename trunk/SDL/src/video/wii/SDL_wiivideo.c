@@ -105,8 +105,12 @@ static camera cam = {
 /****************************************************************************
  * Scaler Support Functions
  ***************************************************************************/
+static int currentwidth;
+static int currentheight;
+static int currentbpp;
+
 static void
-draw_init (SDL_Surface *current, int bpp)
+draw_init ()
 {
 	GX_ClearVtxDesc ();
 	GX_SetVtxDesc (GX_VA_POS, GX_INDEX8);
@@ -134,10 +138,10 @@ draw_init (SDL_Surface *current, int bpp)
 	GX_InvVtxCache ();	// update vertex cache
 
 	// initialize the texture obj we are going to use
-	if (bpp == 8 || bpp == 16)
-		GX_InitTexObj (&texobj, texturemem, current->w, current->h, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
+	if (currentbpp == 8 || currentbpp == 16)
+		GX_InitTexObj (&texobj, texturemem, currentwidth, currentheight, GX_TF_RGB565, GX_CLAMP, GX_CLAMP, GX_FALSE);
 	else
-		GX_InitTexObj (&texobj, texturemem, current->w, current->h, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+		GX_InitTexObj (&texobj, texturemem, currentwidth, currentheight, GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
 
 	GX_LoadTexObj (&texobj, GX_TEXMAP0);	// load texture object so its ready to use
 }
@@ -400,7 +404,10 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	this->hidden->height = current->h;
 	this->hidden->pitch = current->pitch;
 
-	draw_init(current, bpp);
+	currentwidth = currentsurface->w;
+	currentheight = currentsurface->h;
+	currentbpp = bpp;
+	draw_init();
 	StartVideoThread();
 	/* We're done */
 	return(current);
@@ -716,14 +723,20 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 void WII_VideoStart()
 {
 	SetupGX();
+	draw_init();
 	StartVideoThread();
 }
 
-void WII_VideoQuit(_THIS)
+void WII_VideoStop()
 {
 	quit_flip_thread = 1;
 	SDL_WaitThread(videothread, NULL);
 	videothread = 0;
+}
+
+void WII_VideoQuit(_THIS)
+{
+	WII_VideoStop();
 	GX_AbortFrame();
 	GX_Flush();
 
