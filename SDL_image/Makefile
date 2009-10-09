@@ -46,7 +46,7 @@ clean:
 	@echo Cleaning $(LIB_DIR)/libSDL_image.a $(OBJ_DIR)
 	@rm -f $(LIB_DIR)/libSDL_image.a $(OBJS) $(TEST_OBJS)
 	
-install:
+install: all
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
@@ -61,14 +61,14 @@ test-install: $(TEST_DOLS)
 $(LIB_DIR)/libSDL_image.a: $(OBJS)
 	@echo Archiving $@
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-ar crs $@ $(OBJS)
+	@powerpc-eabi-ar crs $@ $(OBJS)
 	@echo ----
 
 # How to build a DOL.
 $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo Creating DOL $@
 	@-mkdir -p $(dir $@)
-	#powerpc-gekko-objcopy -O binary $< $@
+	#powerpc-eabi-objcopy -O binary $< $@
 	elf2dol $< $@
 	@echo ----
 
@@ -85,17 +85,17 @@ INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/jpeg
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT -DLOAD_BMP -DLOAD_JPG -DLOAD_GIF -DLOAD_LBM -DLOAD_PCX -DLOAD_PNM -DLOAD_TGA -DLOAD_XCF -DLOAD_XPM -DLOAD_XV -DLOAD_PNG
 # 
 # -DLOAD_TIFF
-CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS			:= -L$(PORTLIBS)/lib -I$(PORTLIBS)/include $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libSDL/lib -L$(DEVKITPRO)/libpng/lib -L$(LIBOGC_LIB) -L$(DEVKITPRO)/libjpeg/lib  -lSDL_image -lSDL -lpng -ljpeg -lfat -lwiiuse -lbte -logc -lm  -lz
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL_image -lSDL -lpng -ljpeg -lfat -lwiiuse -lbte -logc -lm  -lz
 # -ltiff
 
 # How to link an ELF.
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_image.a $(DEVKITPRO)/libSDL/lib/libSDL.a 
 	@echo Linking $@
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-g++ -o $@ $< $(LDFLAGS)
+	powerpc-eabi-g++ -o $@ $< $(LDFLAGS)
 	#keep elf for debugging
 	#cp $@ /tmp/elf 
 
@@ -103,10 +103,10 @@ $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_image.a $(DEVKITPRO
 $(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/showimage.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
 
 # How to compile C file (SDL library).
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)

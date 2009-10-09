@@ -57,7 +57,7 @@ clean:
 	@echo Cleaning $(LIB_DIR) $(SDL_OBJS)
 	@rm -fr $(LIB_DIR) $(SDL_OBJS)
 
-install:
+install: all
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
@@ -76,14 +76,13 @@ test-clean:
 $(LIB_DIR)/libSDL.a: $(SDL_OBJS)
 	@echo Archiving $@
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-ar crs $@ $(SDL_OBJS)
+	powerpc-eabi-ar crs $@ $(SDL_OBJS)
 	@echo ----
 
 # How to build a DOL.
 $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo Creating DOL $@
 	@-mkdir -p $(dir $@)
-	#powerpc-gekko-objcopy -O binary $< $@
 	elf2dol $< $@
 	@echo ----
 
@@ -100,4 +99,4 @@ LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL -lwiikeyboard -l
 $(SDL_OBJ_DIR)/%.o: $(SDL_SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
