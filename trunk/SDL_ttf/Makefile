@@ -52,7 +52,7 @@ test-install: $(TEST_DOLS)
 	@-mkdir -p dols
 	cp $(TEST_DOLS) dols
 	
-install:
+install: all
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
@@ -62,14 +62,13 @@ install:
 $(LIB_DIR)/libSDL_ttf.a: $(OBJS)
 	@echo Archiving $@
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-ar crs $@ $(OBJS)
+	@powerpc-eabi-ar crs $@ $(OBJS)
 	@echo ----
 
 # How to build a DOL.
 $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo Creating DOL $@
 	@-mkdir -p $(dir $@)
-	#powerpc-gekko-objcopy -O binary $< $@
 	elf2dol $< $@
 	@echo ----
 
@@ -83,7 +82,7 @@ $(INCLUDE_DIR)/SDL_ttf.h: $(SRC_DIR)/SDL_ttf.h
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/freetype
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT 
-CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS			:= -L$(PORTLIBS)/lib -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2 $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
 LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL_ttf -lSDL -lfreetype -lfat -lwiiuse -lbte -logc -lm
@@ -92,7 +91,7 @@ LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -lSDL_ttf -lSDL -lfree
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_ttf.a $(DEVKITPRO)/libSDL/lib/libSDL.a
 	@echo Linking $@
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-g++ -o $@ $< $(LDFLAGS)
+	powerpc-eabi-g++ -o $@ $< $(LDFLAGS)
 	#keep elf for debugging
 	#cp $@ /tmp/elf
 
@@ -100,10 +99,10 @@ $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_ttf.a $(DEVKITPRO)/
 $(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/showfont.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
 
 # How to compile C file (SDL library).
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)

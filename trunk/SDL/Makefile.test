@@ -34,7 +34,6 @@ clean:
 $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo Creating DOL $@
 	@-mkdir -p $(dir $@)
-	#powerpc-gekko-objcopy -O binary $< $@
 	elf2dol $< $@
 	@echo ----
 
@@ -53,7 +52,7 @@ LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -l
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL.a
 	@echo Linking $@
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-g++ -o $@ $< $(LDFLAGS)
+	powerpc-eabi-g++ -o $@ $< $(LDFLAGS)
 	#keep elf for debugging
 	#cp $@ /tmp/elf 
 
@@ -61,4 +60,4 @@ $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL.a
 $(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SsED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SsED)

@@ -41,10 +41,10 @@ clean:
 $(LIB_DIR)/libSDL_gfx.a: $(OBJS)
 	@echo Archiving $@
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-ar crs $@ $(OBJS)
+	@powerpc-eabi-ar crs $@ $(OBJS)
 	@echo ----
 	
-install:
+install: all
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
@@ -66,4 +66,4 @@ CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)

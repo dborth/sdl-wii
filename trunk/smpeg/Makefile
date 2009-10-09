@@ -30,7 +30,7 @@ INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE) -DDISABLE_VIDEO_CALLBACK_THREAD -DNOCONTROLS
+CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE) -DDISABLE_VIDEO_CALLBACK_THREAD -DNOCONTROLS
 CXXFLAGS	=	$(CFLAGS) -DDISABLE_VIDEO_CALLBACK_THREAD -DNOCONTROLS
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -113,7 +113,7 @@ $(BUILD):
 clean:
 	@rm -fr $(BUILD) $(OUTPUT).a
 	
-install:
+install: $(BUILD)
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/mpeg
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)

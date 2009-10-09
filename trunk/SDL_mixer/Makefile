@@ -53,7 +53,7 @@ clean:
 	@echo Cleaning $(LIB_DIR)/libSDL_mixer.a $(OBJ_DIR)
 	@rm -f $(LIB_DIR)/libSDL_mixer.a $(OBJS) $(TEST_OBJS)
 	
-install:
+install: all
 	@mkdir -p $(INSTALL_HEADER_DIR) $(INSTALL_LIB_DIR)
 	@mkdir -p $(INSTALL_HEADER_DIR)/SDL
 	@cp -frv $(LIB_DIR)/*.* $(INSTALL_LIB_DIR)
@@ -63,14 +63,13 @@ install:
 $(LIB_DIR)/libSDL_mixer.a: $(OBJS)
 	@echo Archiving $@
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-ar crs $@ $(OBJS)
+	@powerpc-eabi-ar crs $@ $(OBJS)
 	@echo ----
 	
 # How to build a DOL.
 $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 	@echo Creating DOL $@
 	@-mkdir -p $(dir $@)
-	#powerpc-gekko-objcopy -O binary $< $@
 	elf2dol $< $@
 	@echo ----
 
@@ -91,16 +90,16 @@ DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD 
 # -DOGG_MUSIC 
 # 
 #   -DCMD_MUSIC
-CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS			:= -L$(PORTLIBS)/lib -I$(PORTLIBS)/include $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(DEVKITPRO)/libsmpeg/lib -lSDL_mixer -lsmpeg -lSDL -lfat -lwiiuse -lbte -logc -lm -ltremor
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(DEVKITPRO)/libsmpeg/lib -lSDL_mixer -lsmpeg -lSDL -lfat -lwiiuse -lbte -logc -lm -lvorbisidec
 
 # How to link an ELF.
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_mixer.a $(DEVKITPRO)/libSDL/lib/libSDL.a
 	@echo Linking $@
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-g++ -o $@ $< $(LDFLAGS)
+	powerpc-eabi-g++ -o $@ $< $(LDFLAGS)
 	#keep elf for debugging
 	#cp $@ /tmp/elf
 
@@ -108,10 +107,10 @@ $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_mixer.a $(DEVKITPRO
 $(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/playmus.c $(TEST_SRC_DIR)/playwave.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
 
 # How to compile C file (SDL library).
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-gekko-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
