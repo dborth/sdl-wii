@@ -44,8 +44,10 @@ static Uint8 whichab = 0;
 
 #define AUDIOSTACK 16384*2
 static lwpq_t audioqueue;
-static lwp_t athread;
+static lwp_t athread = LWP_THREAD_NULL;
 static Uint8 astack[AUDIOSTACK];
+static bool stopaudio = false;
+static int currentfreq;
 
 /****************************************************************************
  * Audio Threading
@@ -53,10 +55,11 @@ static Uint8 astack[AUDIOSTACK];
 static void *
 AudioThread (void *arg)
 {
-	LWP_InitQueue (&audioqueue);
-
 	while (1)
 	{
+		if(stopaudio)
+			break;
+
 		whichab ^= 1;
 		memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
 
@@ -92,7 +95,6 @@ AudioThread (void *arg)
 		}
 		LWP_ThreadSleep (audioqueue);
 	}
-
 	return NULL;
 }
 
@@ -107,8 +109,35 @@ DMACallback()
 	DCFlushRange (dma_buffers[whichab], sizeof(dma_buffers[0]));
 	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
 	AUDIO_StartDMA ();
-
 	LWP_ThreadSignal (audioqueue);
+}
+
+void WII_AudioStop()
+{
+	AUDIO_StopDMA ();
+	AUDIO_RegisterDMACallback(0);
+	stopaudio = true;
+	LWP_ThreadSignal(audioqueue);
+	LWP_JoinThread(athread, NULL);
+	LWP_CloseQueue (audioqueue);
+	athread = LWP_THREAD_NULL;
+}
+
+void WII_AudioStart()
+{
+	if (currentfreq == 32000)
+		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
+	else
+		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
+
+	// startup conversion thread
+	stopaudio = false;
+	LWP_InitQueue (&audioqueue);
+	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 67);
+
+	// Start the first chunk of audio playing
+	AUDIO_RegisterDMACallback(DMACallback);
+	DMACallback();
 }
 
 static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
@@ -126,16 +155,8 @@ static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
 	memset(dma_buffers[0], 0, sizeof(dma_buffers[0]));
 	memset(dma_buffers[1], 0, sizeof(dma_buffers[0]));
 
-	if (spec->freq == 32000)
-		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_32KHZ);
-	else
-		AUDIO_SetDSPSampleRate(AI_SAMPLERATE_48KHZ);
-
-	// startup conversion thread
-	LWP_CreateThread (&athread, AudioThread, NULL, astack, AUDIOSTACK, 90);
-
-	// Start the first chunk of audio playing
-	DMACallback();
+	currentfreq = spec->freq;
+	WII_AudioStart();
 
 	return 1;
 }
@@ -201,7 +222,6 @@ static SDL_AudioDevice *WIIAUD_CreateDevice(int devindex)
 
 	// Initialise the Wii side of the audio system
 	AUDIO_Init(0);
-	AUDIO_RegisterDMACallback(DMACallback);
 
 	/* Set the function pointers */
 	this->OpenAudio = WIIAUD_OpenAudio;
