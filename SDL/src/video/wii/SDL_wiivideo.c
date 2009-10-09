@@ -39,7 +39,7 @@
 #include "SDL_wiievents_c.h"
 
 static const char	WIIVID_DRIVER_NAME[] = "wii";
-static SDL_Thread * videothread = 0;
+static lwp_t videothread = LWP_THREAD_NULL;
 static SDL_mutex * videomutex = 0;
 
 /*** SDL ***/
@@ -60,7 +60,8 @@ static SDL_Rect* modes_descending[] =
 
 unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 int whichfb = 0; // Switch
-static GXRModeObj* vmode = 0;
+GXRModeObj* vmode = 0;
+u8 * screenTex = NULL; // screen capture
 static unsigned char texturemem[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // GX texture
 static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
 
@@ -173,33 +174,60 @@ draw_square (Mtx v)
 	GX_End ();
 }
 
+/****************************************************************************
+ * TakeScreenshot
+ *
+ * Copies the current screen into a GX texture
+ ***************************************************************************/
+
+static void TakeScreenshot()
+{
+	int texSize = vmode->fbWidth * vmode->efbHeight * 4;
+
+	if(screenTex) free(screenTex);
+	screenTex = (u8 *)memalign(32, texSize);
+	if(screenTex == NULL) return;
+	GX_SetTexCopySrc(0, 0, vmode->fbWidth, vmode->efbHeight);
+	GX_SetTexCopyDst(vmode->fbWidth, vmode->efbHeight, GX_TF_RGBA8, GX_FALSE);
+	GX_CopyTex(screenTex, GX_FALSE);
+	GX_PixModeSync();
+	DCFlushRange(screenTex, texSize);
+}
+
 static int quit_flip_thread = 0;
 int flip_thread(void * arg)
 {
 	while(1)
 	{
-		if (quit_flip_thread)
+		if(quit_flip_thread == 2)
 			break;
-
-		whichfb ^= 1;
-
-		SDL_mutexP(videomutex);
 
 		// clear texture objects
 		GX_InvVtxCache();
 		GX_InvalidateTexAll();
+		
+		SDL_mutexP(videomutex);
 
 		// load texture into GX
 		DCFlushRange(texturemem, TEXTUREMEM_SIZE);
 
-		GX_SetNumChans(1);
 		GX_LoadTexObj(&texobj, GX_TEXMAP0);
 
 		draw_square(view); // render textured quad
-		GX_CopyDisp(xfb[whichfb], GX_TRUE);
 		GX_DrawDone ();
-
+		GX_SetColorUpdate(GX_TRUE);
+		
 		SDL_mutexV(videomutex);
+
+		if (quit_flip_thread == 1)
+		{
+			quit_flip_thread = 2;
+			TakeScreenshot();
+		}
+		
+		whichfb ^= 1;
+
+		GX_CopyDisp(xfb[whichfb], GX_TRUE);
 
 		VIDEO_SetNextFramebuffer(xfb[whichfb]);
 		VIDEO_Flush();
@@ -212,7 +240,7 @@ static void
 SetupGX()
 {
 	Mtx44 p;
-	int df = 1;
+	int df = 1; // deflicker on/off
 
 	GX_SetViewport (0, 0, vmode->fbWidth, vmode->efbHeight, 0, 1);
 	GX_SetDispCopyYScale ((f32) vmode->xfbHeight / (f32) vmode->efbHeight);
@@ -220,7 +248,7 @@ SetupGX()
 
 	GX_SetDispCopySrc (0, 0, vmode->fbWidth, vmode->efbHeight);
 	GX_SetDispCopyDst (vmode->fbWidth, vmode->xfbHeight);
-	GX_SetCopyFilter (vmode->aa, vmode->sample_pattern, (df == 1) ? GX_TRUE : GX_FALSE, vmode->vfilter); // deflicker ON only for filtered mode
+	GX_SetCopyFilter (vmode->aa, vmode->sample_pattern, (df == 1) ? GX_TRUE : GX_FALSE, vmode->vfilter);
 
 	GX_SetFieldMode (vmode->field_rendering, ((vmode->viHeight == 2 * vmode->xfbHeight) ? GX_ENABLE : GX_DISABLE));
 	GX_SetPixelFmt (GX_PF_RGB8_Z24, GX_ZC_LINEAR);
@@ -230,6 +258,7 @@ SetupGX()
 
 	GX_SetZMode (GX_TRUE, GX_LEQUAL, GX_TRUE);
 	GX_SetColorUpdate (GX_TRUE);
+	GX_SetNumChans(1);
 
 	guOrtho(p, 480/2, -(480/2), -(640/2), 640/2, 100, 1000); // matrix, t, b, l, r, n, f
 	GX_LoadProjectionMtx (p, GX_ORTHOGRAPHIC);
@@ -238,10 +267,10 @@ SetupGX()
 static void
 StartVideoThread()
 {
-	if(videothread == 0)
+	if(videothread == LWP_THREAD_NULL)
 	{
 		quit_flip_thread = 0;
-		videothread = SDL_CreateThread(flip_thread, NULL);
+		LWP_CreateThread (&videothread, flip_thread, NULL, NULL, 0, 68);
 	}
 }
 
@@ -730,8 +759,8 @@ void WII_VideoStart()
 void WII_VideoStop()
 {
 	quit_flip_thread = 1;
-	SDL_WaitThread(videothread, NULL);
-	videothread = 0;
+	LWP_JoinThread(videothread, NULL);
+	videothread = LWP_THREAD_NULL;
 }
 
 void WII_VideoQuit(_THIS)
