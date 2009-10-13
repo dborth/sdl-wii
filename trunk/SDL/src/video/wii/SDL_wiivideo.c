@@ -214,20 +214,19 @@ int flip_thread(void * arg)
 		GX_LoadTexObj(&texobj, GX_TEXMAP0);
 
 		draw_square(view); // render textured quad
-		GX_DrawDone ();
 		GX_SetColorUpdate(GX_TRUE);
-		
-		SDL_mutexV(videomutex);
 
 		if (quit_flip_thread == 1)
 		{
 			quit_flip_thread = 2;
 			TakeScreenshot();
 		}
-		
+
 		whichfb ^= 1;
 
 		GX_CopyDisp(xfb[whichfb], GX_TRUE);
+		GX_DrawDone();
+		SDL_mutexV(videomutex);
 
 		VIDEO_SetNextFramebuffer(xfb[whichfb]);
 		VIDEO_Flush();
