@@ -33,8 +33,6 @@
 #include "SDL_wiivideo.h"
 #include "SDL_wiievents_c.h"
 
-static int lastX = 0;
-static int lastY = 0;
 static Uint8 lastButtonStateA = SDL_RELEASED;
 static Uint8 lastButtonStateB = SDL_RELEASED;
 
@@ -42,6 +40,7 @@ static SDLKey keymap[232];
 
 static s32 stat;
 static s32 mstat;
+static WPADData *wd;
 
 static keyboard_event ke;
 static mouse_event me;
@@ -56,25 +55,13 @@ void PumpEvents()
 #ifdef HW_RVL
 	if (TerminateRequested) Terminate();
 #endif
-	WPADData *wd = WPAD_Data(0);
-
+	wd = WPAD_Data(0);
 	stat = KEYBOARD_GetEvent(&ke);
 	mstat = MOUSE_GetEvent(&me);
-	int x, y;
-
-	SDL_GetMouseState(&x, &y);
 
 	if (wd->ir.valid)
 	{
-		x = wd->ir.x;
-		y = wd->ir.y;
-
-		if (lastX != x || lastY != y)
-		{
-			posted += SDL_PrivateMouseMotion(0, 0, x, y);
-			lastX = x;
-			lastY = y;
-		}
+		posted += SDL_PrivateMouseMotion(0, 0, (int)wd->ir.x, (int)wd->ir.y);
 
 		Uint8 stateA = SDL_RELEASED;
 		Uint8 stateB = SDL_RELEASED;
@@ -87,16 +74,15 @@ void PumpEvents()
 		{
 			stateB = SDL_PRESSED;
 		}
-
 		if (stateA != lastButtonStateA)
 		{
 			lastButtonStateA = stateA;
-			posted += SDL_PrivateMouseButton(stateA, SDL_BUTTON_LEFT, x, y);
+			posted += SDL_PrivateMouseButton(stateA, SDL_BUTTON_LEFT, 0, 0);
 		}
 		if (stateB != lastButtonStateB)
 		{
 			lastButtonStateB = stateB;
-			posted += SDL_PrivateMouseButton(stateB, SDL_BUTTON_RIGHT, x, y);
+			posted += SDL_PrivateMouseButton(stateB, SDL_BUTTON_RIGHT, 0, 0);
 		}
 	}
 
