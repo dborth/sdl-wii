@@ -62,6 +62,7 @@ unsigned int *xfb[2] = { NULL, NULL }; // Double buffered
 int whichfb = 0; // Switch
 GXRModeObj* vmode = 0;
 u8 * screenTex = NULL; // screen capture
+static int quit_flip_thread = 0;
 static unsigned char texturemem[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // GX texture
 static unsigned char textureconvert[TEXTUREMEM_SIZE] __attribute__((aligned(32))); // 565 mem
 
@@ -194,8 +195,7 @@ static void TakeScreenshot()
 	DCFlushRange(screenTex, texSize);
 }
 
-static int quit_flip_thread = 0;
-int flip_thread(void * arg)
+static void * flip_thread (void *arg)
 {
 	while(1)
 	{
@@ -232,7 +232,7 @@ int flip_thread(void * arg)
 		VIDEO_Flush();
 		VIDEO_WaitVSync();
 	}
-	return 0;
+	return NULL;
 }
 
 static void
@@ -435,6 +435,7 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	currentwidth = current->w;
 	currentheight = current->h;
 	currentbpp = bpp;
+	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth, currentheight);
 	draw_init();
 	StartVideoThread();
 	/* We're done */
