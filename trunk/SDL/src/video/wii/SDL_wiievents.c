@@ -41,6 +41,7 @@ static SDLKey keymap[232];
 static s32 stat;
 static s32 mstat;
 static WPADData *wd;
+static int lastx = 0, lasty = 0;
 
 static keyboard_event ke;
 static mouse_event me;
@@ -61,7 +62,14 @@ void PumpEvents()
 
 	if (wd->ir.valid)
 	{
-		posted += SDL_PrivateMouseMotion(0, 0, (int)wd->ir.x, (int)wd->ir.y);
+		int newx = wd->ir.x;
+		int newy = wd->ir.y;
+		int diffx = newx - lastx;
+		int diffy = newy - lasty;
+		lastx = newx;
+		lasty = newy;
+
+		posted += SDL_PrivateMouseMotion(0, 1, diffx, diffy);
 
 		Uint8 stateA = SDL_RELEASED;
 		Uint8 stateB = SDL_RELEASED;
@@ -99,7 +107,7 @@ void PumpEvents()
 
 	if (mstat)
 	{
-		posted += SDL_PrivateMouseMotion(me.button, 1, me.rx, me.ry);
+		posted += SDL_PrivateMouseMotion(0, 1, me.rx*2, me.ry*2);
 
 		u8 button = me.button;
 

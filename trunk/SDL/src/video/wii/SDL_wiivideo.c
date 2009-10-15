@@ -435,7 +435,7 @@ SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 	currentwidth = current->w;
 	currentheight = current->h;
 	currentbpp = bpp;
-	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth, currentheight);
+	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth*2, currentheight*2);
 	draw_init();
 	StartVideoThread();
 	/* We're done */
@@ -754,6 +754,7 @@ void WII_VideoStart()
 	SetupGX();
 	draw_init();
 	StartVideoThread();
+	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth*2, currentheight*2);
 }
 
 void WII_VideoStop()
