@@ -157,7 +157,7 @@ static void OGG_getsome(OGG_music *music)
 		vorbis_info *vi;
 
 		vi = vorbis.ov_info(&music->vf, -1);
-		SDL_BuildAudioCVT(cvt, AUDIO_S16, vi->channels, vi->rate,
+		SDL_BuildAudioCVT(cvt, AUDIO_S16MSB, vi->channels, vi->rate,
 		                       mixer.format,mixer.channels,mixer.freq);
 		if ( cvt->buf ) {
 			free(cvt->buf);
