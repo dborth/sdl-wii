@@ -44,5 +44,8 @@ struct SDL_PrivateVideoData
 };
 
 void WII_InitVideoSystem();
+void WII_VideoStart();
+void WII_VideoStop();
+void WII_ChangeSquare(int xscale, int yscale, int xshift, int yshift);
 
 #endif /* _SDL_wiivideo_h */

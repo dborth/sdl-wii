@@ -91,7 +91,7 @@ static s16 square[] ATTRIBUTE_ALIGN (32) =
    * X,   Y,  Z
    * Values set are for roughly 4:3 aspect
    */
-	-HASPECT,  VASPECT, 0,		// 0
+	-HASPECT,  VASPECT, 0,	// 0
 	 HASPECT,  VASPECT, 0,	// 1
 	 HASPECT, -VASPECT, 0,	// 2
 	-HASPECT, -VASPECT, 0	// 3
@@ -273,64 +273,7 @@ StartVideoThread()
 	}
 }
 
-void
-WII_InitVideoSystem()
-{
-	/* Initialise the video system */
-	VIDEO_Init();
-	vmode = VIDEO_GetPreferredMode(NULL);
-
-	switch (vmode->viTVMode >> 2)
-	{
-		case VI_PAL: // 576 lines (PAL 50hz)
-			// display should be centered vertically (borders)
-			vmode = &TVPal574IntDfScale;
-			vmode->xfbHeight = 480;
-			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
-			vmode->viHeight = 480;
-			break;
-
-		case VI_NTSC: // 480 lines (NTSC 60hz)
-			break;
-
-		default: // 480 lines (PAL 60Hz)
-			break;
-	}
-
-	/* Set up the video system with the chosen mode */
-	VIDEO_Configure(vmode);
-
-	// Allocate the video buffers
-	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
-	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
-
-	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
-	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
-	VIDEO_SetNextFramebuffer (xfb[0]);
-
-	// Show the screen.
-	VIDEO_SetBlack(FALSE);
-	VIDEO_Flush();
-	VIDEO_WaitVSync();
-	if (vmode->viTVMode & VI_NON_INTERLACE)
-			VIDEO_WaitVSync();
-		else
-			while (VIDEO_GetNextField())
-				VIDEO_WaitVSync();
-
-	/*** Clear out FIFO area ***/
-	memset (&gp_fifo, 0, DEFAULT_FIFO_SIZE);
-
-	/*** Initialise GX ***/
-	GX_Init (&gp_fifo, DEFAULT_FIFO_SIZE);
-
-	GXColor background = { 0, 0, 0, 0xff };
-	GX_SetCopyClear (background, 0x00ffffff);
-
-	SetupGX();
-}
-
-int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
+static int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
 {
 	// Set up the modes.
 	mode_640.w = vmode->fbWidth;
@@ -351,12 +294,12 @@ int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
 	return(0);
 }
 
-SDL_Rect **WII_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
+static SDL_Rect **WII_ListModes(_THIS, SDL_PixelFormat *format, Uint32 flags)
 {
 	return &modes_descending[0];
 }
 
-SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
+static SDL_Surface *WII_SetVideoMode(_THIS, SDL_Surface *current,
 								   int width, int height, int bpp, Uint32 flags)
 {
 	SDL_Rect* 		mode;
@@ -729,7 +672,7 @@ static int WII_FlipHWSurface(_THIS, SDL_Surface *surface)
 	return 1;
 }
 
-int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
+static int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 {
 	const int last_color = first_color + color_count;
 	Uint16* const palette = this->hidden->palette;
@@ -749,22 +692,7 @@ int WII_SetColors(_THIS, int first_color, int color_count, SDL_Color *colors)
 	return(1);
 }
 
-void WII_VideoStart()
-{
-	SetupGX();
-	draw_init();
-	StartVideoThread();
-	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth*2, currentheight*2);
-}
-
-void WII_VideoStop()
-{
-	quit_flip_thread = 1;
-	LWP_JoinThread(videothread, NULL);
-	videothread = LWP_THREAD_NULL;
-}
-
-void WII_VideoQuit(_THIS)
+static void WII_VideoQuit(_THIS)
 {
 	WII_VideoStop();
 	GX_AbortFrame();
@@ -841,3 +769,87 @@ VideoBootStrap WII_bootstrap = {
 	WIIVID_DRIVER_NAME, "Wii video driver",
 	WII_Available, WII_CreateDevice
 };
+
+void
+WII_InitVideoSystem()
+{
+	/* Initialise the video system */
+	VIDEO_Init();
+	vmode = VIDEO_GetPreferredMode(NULL);
+
+	switch (vmode->viTVMode >> 2)
+	{
+		case VI_PAL: // 576 lines (PAL 50hz)
+			// display should be centered vertically (borders)
+			vmode = &TVPal574IntDfScale;
+			vmode->xfbHeight = 480;
+			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
+			vmode->viHeight = 480;
+			break;
+
+		case VI_NTSC: // 480 lines (NTSC 60hz)
+			break;
+
+		default: // 480 lines (PAL 60Hz)
+			break;
+	}
+
+	/* Set up the video system with the chosen mode */
+	VIDEO_Configure(vmode);
+
+	// Allocate the video buffers
+	xfb[0] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+	xfb[1] = (u32 *) MEM_K0_TO_K1 (SYS_AllocateFramebuffer (vmode));
+
+	VIDEO_ClearFrameBuffer(vmode, xfb[0], COLOR_BLACK);
+	VIDEO_ClearFrameBuffer(vmode, xfb[1], COLOR_BLACK);
+	VIDEO_SetNextFramebuffer (xfb[0]);
+
+	// Show the screen.
+	VIDEO_SetBlack(FALSE);
+	VIDEO_Flush();
+	VIDEO_WaitVSync();
+	if (vmode->viTVMode & VI_NON_INTERLACE)
+			VIDEO_WaitVSync();
+		else
+			while (VIDEO_GetNextField())
+				VIDEO_WaitVSync();
+
+	CON_Init(xfb[0],20,20,vmode->fbWidth,vmode->xfbHeight,vmode->fbWidth*VI_DISPLAY_PIX_SZ);
+
+	/*** Clear out FIFO area ***/
+	memset (&gp_fifo, 0, DEFAULT_FIFO_SIZE);
+
+	/*** Initialise GX ***/
+	GX_Init (&gp_fifo, DEFAULT_FIFO_SIZE);
+
+	GXColor background = { 0, 0, 0, 0xff };
+	GX_SetCopyClear (background, 0x00ffffff);
+
+	SetupGX();
+}
+
+void WII_VideoStart()
+{
+	SetupGX();
+	draw_init();
+	StartVideoThread();
+	WPAD_SetVRes(WPAD_CHAN_ALL, currentwidth*2, currentheight*2);
+}
+
+void WII_VideoStop()
+{
+	quit_flip_thread = 1;
+	if(videothread == LWP_THREAD_NULL) return;
+	LWP_JoinThread(videothread, NULL);
+	videothread = LWP_THREAD_NULL;
+}
+
+void WII_ChangeSquare(int xscale, int yscale, int xshift, int yshift)
+{
+	square[6] = square[3]  =  xscale + xshift;
+	square[0] = square[9]  = -xscale + xshift;
+	square[4] = square[1]  =  yscale - yshift;
+	square[7] = square[10] = -yscale - yshift;
+	DCFlushRange (square, 32); // update memory BEFORE the GPU accesses it!
+}
