@@ -832,7 +832,8 @@ WII_InitVideoSystem()
 void WII_SetWidescreen(int wide)
 {
 	if(wide)
-	{	vmode->viWidth = 678;
+	{
+		vmode->viWidth = 678;
 		vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - 678) / 2;
 	}
 	else
