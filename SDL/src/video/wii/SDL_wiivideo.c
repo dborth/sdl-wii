@@ -846,7 +846,7 @@ void WII_SetWidescreen(int wide)
 	
 	VIDEO_WaitVSync ();
 		
-	if (mode->viTVMode & VI_NON_INTERLACE)
+	if (vmode->viTVMode & VI_NON_INTERLACE)
 		VIDEO_WaitVSync();
 	else
 		while (VIDEO_GetNextField())
