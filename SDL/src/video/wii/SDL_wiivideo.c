@@ -829,6 +829,29 @@ WII_InitVideoSystem()
 	SetupGX();
 }
 
+void WII_SetWidescreen(int wide)
+{
+	if(wide)
+	{	vmode->viWidth = 678;
+		vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - 678) / 2;
+	}
+	else
+	{
+		vmode->viWidth = 640;
+		vmode->viXOrigin = (VI_MAX_WIDTH_NTSC - 640) / 2;
+	}
+	VIDEO_Configure (vmode);
+	VIDEO_Flush();
+	
+	VIDEO_WaitVSync ();
+		
+	if (mode->viTVMode & VI_NON_INTERLACE)
+		VIDEO_WaitVSync();
+	else
+		while (VIDEO_GetNextField())
+			VIDEO_WaitVSync();
+}
+
 void WII_VideoStart()
 {
 	SetupGX();
