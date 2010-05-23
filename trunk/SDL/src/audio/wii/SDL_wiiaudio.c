@@ -105,10 +105,8 @@ AudioThread (void *arg)
 static void
 DMACallback()
 {
-	AUDIO_StopDMA ();
 	DCFlushRange (dma_buffers[whichab], sizeof(dma_buffers[0]));
 	AUDIO_InitDMA ((Uint32)dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
-	AUDIO_StartDMA ();
 	LWP_ThreadSignal (audioqueue);
 }
 
@@ -138,6 +136,7 @@ void WII_AudioStart()
 	// Start the first chunk of audio playing
 	AUDIO_RegisterDMACallback(DMACallback);
 	DMACallback();
+	AUDIO_StartDMA();
 }
 
 static int WIIAUD_OpenAudio(_THIS, SDL_AudioSpec *spec)
