@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #ifndef __BEOS__
-#include <sys/select.h>
+//#include <sys/select.h>
 #endif
 #endif
 
