@@ -62,39 +62,38 @@ AudioThread (void *arg)
 			break;
 
 		// Is the device ready?
-		if (current_audio && (!current_audio->paused))
+		if (!current_audio || current_audio->paused)
 		{
-			// Is conversion required?
-			if (current_audio->convert.needed)
-			{
-				SDL_mutexP(current_audio->mixer_lock);
-				// Get the client to produce audio
-				current_audio->spec.callback(
-					current_audio->spec.userdata,
-					current_audio->convert.buf,
-					current_audio->convert.len);
-				SDL_mutexV(current_audio->mixer_lock);
+			memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
+		}
+		else if (current_audio->convert.needed) // Is conversion required?
+		{
+			SDL_mutexP(current_audio->mixer_lock);
+			// Get the client to produce audio
+			current_audio->spec.callback(
+				current_audio->spec.userdata,
+				current_audio->convert.buf,
+				current_audio->convert.len);
+			SDL_mutexV(current_audio->mixer_lock);
 
-				// Convert the audio
-				SDL_ConvertAudio(&current_audio->convert);
+			// Convert the audio
+			SDL_ConvertAudio(&current_audio->convert);
 
-				// Copy from SDL buffer to DMA buffer
-				memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
-				memcpy(dma_buffers[whichab], current_audio->convert.buf, current_audio->convert.len_cvt);
-				DCFlushRange(dma_buffers[whichab], current_audio->convert.len_cvt);
-				dma_buffers_size[whichab] = current_audio->convert.len_cvt;
-			}
-			else
-			{
-				SDL_mutexP(current_audio->mixer_lock);
-				current_audio->spec.callback(
-					current_audio->spec.userdata,
-					(Uint8 *)dma_buffers[whichab],
-					SAMPLES_PER_DMA_BUFFER*4);
-				DCFlushRange(dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
-				dma_buffers_size[whichab] = SAMPLES_PER_DMA_BUFFER*4;
-				SDL_mutexV(current_audio->mixer_lock);
-			}
+			// Copy from SDL buffer to DMA buffer
+			memcpy(dma_buffers[whichab], current_audio->convert.buf, current_audio->convert.len_cvt);
+			DCFlushRange(dma_buffers[whichab], current_audio->convert.len_cvt);
+			dma_buffers_size[whichab] = current_audio->convert.len_cvt;
+		}
+		else
+		{
+			SDL_mutexP(current_audio->mixer_lock);
+			current_audio->spec.callback(
+				current_audio->spec.userdata,
+				(Uint8 *)dma_buffers[whichab],
+				SAMPLES_PER_DMA_BUFFER*4);
+			DCFlushRange(dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
+			dma_buffers_size[whichab] = SAMPLES_PER_DMA_BUFFER*4;
+			SDL_mutexV(current_audio->mixer_lock);
 		}
 		LWP_ThreadSleep (audioqueue);
 	}
