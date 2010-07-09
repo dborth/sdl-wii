@@ -64,7 +64,9 @@ AudioThread (void *arg)
 		// Is the device ready?
 		if (!current_audio || current_audio->paused)
 		{
-			memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
+			memset(dma_buffers[whichab], 0, SAMPLES_PER_DMA_BUFFER*4);
+			DCFlushRange(dma_buffers[whichab], SAMPLES_PER_DMA_BUFFER*4);
+			dma_buffers_size[whichab] = SAMPLES_PER_DMA_BUFFER*4;
 		}
 		else if (current_audio->convert.needed) // Is conversion required?
 		{
