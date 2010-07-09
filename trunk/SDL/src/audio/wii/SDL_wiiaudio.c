@@ -79,6 +79,7 @@ AudioThread (void *arg)
 				SDL_ConvertAudio(&current_audio->convert);
 
 				// Copy from SDL buffer to DMA buffer
+				memset(dma_buffers[whichab], 0, sizeof(dma_buffers[0]));
 				memcpy(dma_buffers[whichab], current_audio->convert.buf, current_audio->convert.len_cvt);
 				DCFlushRange(dma_buffers[whichab], current_audio->convert.len_cvt);
 				dma_buffers_size[whichab] = current_audio->convert.len_cvt;
