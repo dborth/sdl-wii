@@ -43,15 +43,10 @@ Uint32 SDL_GetTicks (void)
 void SDL_Delay (Uint32 ms)
 {
 	struct timespec ts;
-	ts.tv_sec = 0;
-	ts.tv_nsec = ms*1000000;
+	
+	ts.tv_sec = ms/1000;
+	ts.tv_nsec = (ms-ts.tv_sec*1000)*1000000;
 	nanosleep(&ts);
-	/*
-	const Uint32 start = SDL_GetTicks();
-	while ((SDL_GetTicks() - start) < ms)
-	{
-		VIDEO_WaitVSync();
-		}*/
 }
 
 #include "SDL_thread.h"
