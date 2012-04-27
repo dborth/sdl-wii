@@ -777,23 +777,6 @@ WII_InitVideoSystem()
 	VIDEO_Init();
 	vmode = VIDEO_GetPreferredMode(NULL);
 
-	switch (vmode->viTVMode >> 2)
-	{
-		case VI_PAL: // 576 lines (PAL 50hz)
-			// display should be centered vertically (borders)
-			vmode = &TVPal574IntDfScale;
-			vmode->xfbHeight = 480;
-			vmode->viYOrigin = (VI_MAX_HEIGHT_PAL - 480)/2;
-			vmode->viHeight = 480;
-			break;
-
-		case VI_NTSC: // 480 lines (NTSC 60hz)
-			break;
-
-		default: // 480 lines (PAL 60Hz)
-			break;
-	}
-
 	/* Set up the video system with the chosen mode */
 	VIDEO_Configure(vmode);
 
