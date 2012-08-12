@@ -277,7 +277,7 @@ static int WII_VideoInit(_THIS, SDL_PixelFormat *vformat)
 {
 	// Set up the modes.
 	mode_640.w = vmode->fbWidth;
-	mode_640.h = vmode->xfbHeight;
+	mode_640.h = vmode->efbHeight;
 	mode_320.w = mode_640.w / 2;
 	mode_320.h = mode_640.h / 2;
 
