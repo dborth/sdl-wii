@@ -107,7 +107,7 @@ void PumpEvents()
 
 	if (mstat)
 	{
-		posted += SDL_PrivateMouseMotion(0, 1, me.rx*2, me.ry*2);
+		posted += SDL_PrivateMouseMotion(0, 1, me.rx, me.ry);
 
 		u8 button = me.button;
 
