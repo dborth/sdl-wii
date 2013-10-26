@@ -376,16 +376,16 @@ static void _HandleWiiJoystickUpdate(SDL_Joystick* joystick)
 			SDL_PrivateJoystickAxis(joystick, 3, -(axis << 8));
 			prev_state->wiimote.classicR_stickY = axis;
 		}
-		axis = exp.classic.r_shoulder;
+		axis = exp.classic.r_shoulder*255;
 		if(prev_state->wiimote.classic_triggerR != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 4, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 4, axis << 7);
 			prev_state->wiimote.classic_triggerR = axis;
 		}
-		axis = exp.classic.l_shoulder;
+		axis = exp.classic.l_shoulder*255;
 		if(prev_state->wiimote.classic_triggerL != axis)
 		{
-			SDL_PrivateJoystickAxis(joystick, 5, axis << 8);
+			SDL_PrivateJoystickAxis(joystick, 5, axis << 7);
 			prev_state->wiimote.classic_triggerL = axis;
 		}
 	}
@@ -462,45 +462,45 @@ static void _HandleGCJoystickUpdate(SDL_Joystick* joystick)
 				(buttons & sdl_buttons_gc[i]) ? SDL_PRESSED : SDL_RELEASED);
 	}
 	prev_state->gamecube.prev_buttons = buttons;
-	axis = PAD_StickX(joystick->index);
+	axis = PAD_StickX(joystick->index-4);
 	if(prev_state->gamecube.stickX != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 0, axis << 8);
 		prev_state->gamecube.stickX = axis;
 	}
 
-	axis = PAD_StickY(joystick->index);
+	axis = PAD_StickY(joystick->index-4);
 	if(prev_state->gamecube.stickY != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 1, (-axis) << 8);
 		prev_state->gamecube.stickY = axis;
 	}
 
-	axis = PAD_SubStickX(joystick->index);
+	axis = PAD_SubStickX(joystick->index-4);
 	if(prev_state->gamecube.substickX != axis)
 	{
 		SDL_PrivateJoystickAxis(joystick, 2, axis << 8);
 		prev_state->gamecube.substickX = axis;
 	}
 
-	axis = PAD_SubStickY(joystick->index);
+	axis = PAD_SubStickY(joystick->index-4);
 	if(prev_state->gamecube.substickY != axis)
 	{
-		SDL_PrivateJoystickAxis(joystick, 3, axis << 8);
+		SDL_PrivateJoystickAxis(joystick, 3, (-axis) << 8);
 		prev_state->gamecube.substickY = axis;
 	}
 
-	axis = PAD_TriggerL(joystick->index);
+	axis = PAD_TriggerL(joystick->index-4);
 	if(prev_state->gamecube.triggerL != axis)
 	{
-		SDL_PrivateJoystickAxis(joystick, 4, axis << 8);
+		SDL_PrivateJoystickAxis(joystick, 4, axis << 7);
 		prev_state->gamecube.triggerL = axis;
 	}
 
-	axis = PAD_TriggerR(joystick->index);
+	axis = PAD_TriggerR(joystick->index-4);
 	if(prev_state->gamecube.triggerR != axis)
 	{
-		SDL_PrivateJoystickAxis(joystick, 5, axis << 8);
+		SDL_PrivateJoystickAxis(joystick, 5, axis << 7);
 		prev_state->gamecube.triggerR = axis;
 	}
 }
