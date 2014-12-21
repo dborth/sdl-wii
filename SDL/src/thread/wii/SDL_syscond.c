@@ -115,30 +115,21 @@ int SDL_CondBroadcast(SDL_cond *cond)
  SDL_UnlockMutex(lock);
  */
 
-extern int clock_gettime(struct timespec *tp);
 
 int SDL_CondWaitTimeout(SDL_cond *cond, SDL_mutex *mutex, Uint32 ms)
 {
-	struct timespec now;
-	struct timespec abstime;
+	struct timespec time; 
 
 	if (!cond)
 	{
 		SDL_SetError("Passed a NULL condition variable");
 		return -1;
 	}
+	//LWP_CondTimedWait expects relative timeout
+	time.tv_sec = (ms / 1000);
+	time.tv_nsec = (ms % 1000) * 1000000;
 
-	clock_gettime(&now);
-
-	abstime.tv_sec = now.tv_sec + (ms / 1000);
-	abstime.tv_nsec = (now.tv_nsec + (ms % 1000) * 1000) * 1000;
-	if (abstime.tv_nsec > 1000000000)
-	{
-		abstime.tv_sec += 1;
-		abstime.tv_nsec -= 1000000000;
-	}
-
-	return LWP_CondTimedWait(cond->cond, mutex->id, &abstime);
+	return LWP_CondTimedWait(cond->cond, mutex->id, &time);
 }
 
 /* Wait on the condition variable forever */
