@@ -290,9 +290,11 @@ Uint32 SDL_GetThreadID(SDL_Thread *thread)
 
 void SDL_KillThread(SDL_Thread *thread)
 {
+#ifndef GEKKO		
 	if ( thread ) {
 		SDL_SYS_KillThread(thread);
 		SDL_WaitThread(thread, NULL);
 	}
+#endif		
 }
 
