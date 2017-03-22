@@ -58,7 +58,7 @@ headers:
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
-INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I../SDL/include
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
@@ -66,4 +66,4 @@ CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)

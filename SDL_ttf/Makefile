@@ -80,7 +80,7 @@ $(INCLUDE_DIR)/SDL_ttf.h: $(SRC_DIR)/SDL_ttf.h
 
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
-INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/freetype
+INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL -I$(LIBOGC_INC)/freetype -I../SDL/include
 DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT 
 CFLAGS			:= -L$(PORTLIBS)/lib -I$(PORTLIBS)/include -I$(PORTLIBS)/include/freetype2 $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
@@ -105,4 +105,4 @@ $(TEST_OBJ_DIR)/%.o: $(TEST_SRC_DIR)/showfont.c
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo Compiling $<
 	@-mkdir -p $(dir $@)
-	@powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
+	powerpc-eabi-gcc $(CFLAGS) -c $< -o $@ $(PIPE_TO_SED)
