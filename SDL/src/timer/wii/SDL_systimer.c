@@ -42,11 +42,12 @@ Uint32 SDL_GetTicks (void)
 
 void SDL_Delay (Uint32 ms)
 {
-	struct timespec ts;
-	
-	ts.tv_sec = ms/1000;
-	ts.tv_nsec = (ms-ts.tv_sec*1000)*1000000;
-	nanosleep(&ts);
+	struct timespec elapsed, tv;
+	elapsed.tv_sec = ms/1000;
+	elapsed.tv_nsec = (ms%1000)*1000000;
+	tv.tv_sec = elapsed.tv_sec;
+	tv.tv_nsec = elapsed.tv_nsec;
+	nanosleep(&tv, &elapsed);
 }
 
 #include "SDL_thread.h"
