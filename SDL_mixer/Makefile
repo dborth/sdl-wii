@@ -90,7 +90,7 @@ DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD 
 # -DOGG_MUSIC 
 # 
 #   -DCMD_MUSIC
-CFLAGS			:= -L$(PORTLIBS)/lib -I$(PORTLIBS)/include $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS			:= $(foreach dir,$(PORTLIBS),-L$(dir)/lib) $(foreach dir,$(PORTLIBS),-I$(dir)/include) $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
 LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(DEVKITPRO)/libsmpeg/lib -lSDL_mixer -lsmpeg -lSDL -lfat -lwiiuse -lbte -logc -lm -lvorbisidec
