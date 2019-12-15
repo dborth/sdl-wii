@@ -19,12 +19,12 @@ TARGET		:=	libsmpeg
 BUILD		:=	obj
 SOURCES		:=	src src/video src/audio
 DATA		:=	data  
-INCLUDES	:=	src -I$(LIBOGC_INC)/SDL ../SDL/include
+INCLUDES	:=	src -I$(PORTLIBS_PATH)/wii/include/SDL ../SDL/include
 SRC_DIR			:= src
 LIB_DIR			:= lib
 INCLUDE_DIR		:= include
-INSTALL_HEADER_DIR	?= $(LIBOGC_INC)
-INSTALL_LIB_DIR		?= $(LIBOGC_LIB)
+INSTALL_HEADER_DIR	?= $(PORTLIBS_PATH)/wii/include
+INSTALL_LIB_DIR		?= $(PORTLIBS_PATH)/wii/lib
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -44,7 +44,7 @@ LIBS	:=	-lSDL -lwiiuse -lbte -lfat -logc -lm
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(LIBOGC_LIB)/SDL
+LIBDIRS	:= $(PORTLIBS)
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -89,7 +89,7 @@ export OFILES	:=	$(addsuffix .o,$(BINFILES)) \
 export INCLUDE	:=	$(foreach dir,$(INCLUDES), -iquote $(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD) \
-					-I$(LIBOGC_INC) -I$(LIBOGC_INC)/SDL
+					-I$(LIBOGC_INC) -I$(PORTLIBS_PATH)/wii/include/SDL
 
 #---------------------------------------------------------------------------------
 # build a list of library paths

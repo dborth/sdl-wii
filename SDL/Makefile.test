@@ -40,13 +40,13 @@ $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 # Compilation flags.
 #COMMON_FLAGS	:= -g -O2 -mrvl -Wall -mcpu=750 -meabi -mhard-float $(MACHDEP) 
 COMMON_FLAGS	:= -g -O2 -mrvl -Wall -mcpu=750 -meabi -mhard-float $(MACHDEP) 
-INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include
+INCLUDES		:= -Iinclude -I$(DEVKITPRO)/libogc/include -I$(PORTLIBS_PATH)/wii/include
 #DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT -DSDL_AUDIO_DRIVER_WII
 DEFINES			:= -DGEKKO -DSDL_AUDIO_DRIVER_WII
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -lSDL -lfat -lwiiuse -lbte -logc -lm 
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(DEVKITPRO)/libogc/lib/wii -L$(PORTLIBS_PATH)/wii/lib -lSDL -lfat -lwiiuse -lbte -logc -lm 
 
 # How to link an ELF.
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL.a
