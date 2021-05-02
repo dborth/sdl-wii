@@ -29,13 +29,16 @@
 
 #include <ogcsys.h>
 
+static Uint64 start;
+
 void SDL_StartTicks(void)
 {
+	start = gettime();
 }
 
 Uint32 SDL_GetTicks (void)
 {
-	const Uint64 ticks	= gettime();
+	const Uint64 ticks	= gettime() - start;
 	const Uint64 ms		= ticks / TB_TIMER_CLOCK;
 	return ms;
 }
