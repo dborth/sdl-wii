@@ -60,7 +60,7 @@ INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(PORTLIBS_PATH)/wii/include/SDL -I../S
 # -include sys/wait.h 
 # -include sys/syslimits.h
 
-DEFINES			:= -DGEKKO
+DEFINES			:= -DGEKKO -D__WII__
 
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
