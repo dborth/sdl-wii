@@ -76,4 +76,4 @@ jobs:
         removeArtifacts: true
         replacesArtifacts: false
         tag: Pre-release
-        artifacts: "dist/*"
+        artifacts: "dist/SDL-Wii/*.zip"
