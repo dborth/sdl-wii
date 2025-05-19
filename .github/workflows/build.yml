@@ -63,6 +63,11 @@ jobs:
       with:
         path: dist
 
+    - name: Re-zip artifact
+      run: |
+        cd dist
+        zip -r SDL-Wii.zip SDL-Wii
+
     - name: Update Git Tag
       run: |
         git tag -f Pre-release
@@ -76,4 +81,4 @@ jobs:
         removeArtifacts: true
         replacesArtifacts: false
         tag: Pre-release
-        artifacts: "dist/SDL-Wii/*.zip"
+        artifacts: "dist/*.zip"
