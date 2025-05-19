@@ -65,8 +65,8 @@ jobs:
 
     - name: Re-zip artifact
       run: |
-        cd dist
-        zip -r SDL-Wii.zip SDL-Wii
+        cd dist/SDL-Wii
+        zip -r SDL-Wii.zip
 
     - name: Update Git Tag
       run: |
