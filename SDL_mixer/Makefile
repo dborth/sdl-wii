@@ -80,7 +80,7 @@ $(INCLUDE_DIR)/SDL_mixer.h: $(SRC_DIR)/SDL_mixer.h
 	@cp $(SRC_DIR)/SDL_mixer.h $(INCLUDE_DIR)
 
 # Compilation flags.
-COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
+COMMON_FLAGS	:= -g -O3 -mrvl -Wall -std=gnu89 $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(PORTLIBS_PATH)/wii/include/SDL -I$(PORTLIBS_PATH)/wii/include/mpeg -I../smpeg/include -Isrc/mikmod -Isrc/timidity -I../SDL/include
 # -include sys/wait.h 
 # -include sys/syslimits.h

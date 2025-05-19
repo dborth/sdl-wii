@@ -1,0 +1,72 @@
+name: SDL Wii
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitppc:latest
+
+    steps:
+    - name: Compile
+      make -f Makefile
+
+    - name: Copy artifacts
+      mkdir -p dist/lib
+      mkdir -p dist/include
+      mkdir -p dist/include/SDL
+      mkdir -p dist/include/mpeg
+      cp SDL/lib dist/lib
+      cp SDL/include dist/include/SDL
+      cp SDL_gfx/lib dist/lib
+      cp SDL_gfx/include dist/include/SDL
+      cp SDL_image/lib dist/lib
+      cp SDL_image/include dist/include/SDL
+      cp SDL_mixer/lib dist/lib
+      cp SDL_mixer/include dist/include/SDL
+      cp SDL_net/lib dist/lib
+      cp SDL_net/include dist/include/SDL
+      cp SDL_ttf/lib dist/lib
+      cp SDL_ttf/include dist/include/SDL
+      cp smpeg/lib dist/lib
+      cp smpeg/include dist/include/mpeg
+      
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: SDL-Wii
+        path: |
+          dist/
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+    - name: Checkout sdl-wii repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download Artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: dist
+
+    - name: Update Git Tag
+      run: |
+        git tag -f Pre-release
+        git push -f origin Pre-release
+
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        prerelease: true
+        allowUpdates: true
+        removeArtifacts: true
+        replacesArtifacts: false
+        tag: Pre-release
+        artifacts: "dist/*.zip"
