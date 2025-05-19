@@ -89,7 +89,7 @@ $(BIN_DIR)/%.dol: $(TEST_OBJ_DIR)/%.elf
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -Wall $(MACHDEP) 
 INCLUDES		:= -Iinclude -I$(LIBOGC_INC)
-DEFINES			:= -DGEKKO
+DEFINES			:= -DGEKKO -D__WII__
 CFLAGS			:= $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.

@@ -81,7 +81,7 @@ $(INCLUDE_DIR)/SDL_ttf.h: $(SRC_DIR)/SDL_ttf.h
 # Compilation flags.
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(PORTLIBS_PATH)/wii/include/SDL -I../SDL/include
-DEFINES			:= -DGEKKO -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT 
+DEFINES			:= -DGEKKO -D__WII__ -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT 
 CFLAGS			:= $(foreach dir,$(PORTLIBS),-L$(dir)/lib) $(foreach dir,$(PORTLIBS),-I$(dir)/include) `freetype-config --cflags` $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
