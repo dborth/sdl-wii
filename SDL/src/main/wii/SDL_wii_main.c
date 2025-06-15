@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	WPAD_Init();
 	WPAD_SetPowerButtonCallback((WPADShutdownCallback)ShutdownCB);
 	SYS_SetPowerCallback(ShutdownCB);
-	SYS_SetResetCallback(ResetCB);
+	SYS_SetResetCallback((resetcallback)ResetCB);
 #endif
 	PAD_Init();
 	WII_InitVideoSystem();
