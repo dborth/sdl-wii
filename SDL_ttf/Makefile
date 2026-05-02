@@ -8,6 +8,8 @@ $(error "Please set DEVKITPPC in your environment. export DEVKITPPC=<path to>dev
 endif
 
 include $(DEVKITPPC)/wii_rules
+export	FREETYPE_CFLAGS 	:=	`$(DEVKITPRO)/portlibs/ppc/bin/powerpc-eabi-pkg-config --cflags freetype2`
+export	FREETYPE_LIBS	:=	`$(DEVKITPRO)/portlibs/ppc/bin/powerpc-eabi-pkg-config --libs freetype2`
 
 # Directories.
 OBJ_DIR			:= obj
@@ -82,10 +84,10 @@ $(INCLUDE_DIR)/SDL_ttf.h: $(SRC_DIR)/SDL_ttf.h
 COMMON_FLAGS	:= -g -O3 -mrvl -Wall $(MACHDEP)
 INCLUDES		:= -Iinclude -I$(LIBOGC_INC) -I$(PORTLIBS_PATH)/wii/include/SDL -I../SDL/include
 DEFINES			:= -DGEKKO -D__WII__ -DDEBUG_ERROR -DDEBUG_TIMERS -DDEBUG_THREADS -DDEBUG_BUILD -DDEBUG_CONVERT 
-CFLAGS			:= $(foreach dir,$(PORTLIBS),-L$(dir)/lib) $(foreach dir,$(PORTLIBS),-I$(dir)/include) `freetype-config --cflags` $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
+CFLAGS			:= $(foreach dir,$(PORTLIBS),-L$(dir)/lib) $(foreach dir,$(PORTLIBS),-I$(dir)/include) $(FREETYPE_CFLAGS) $(COMMON_FLAGS) $(INCLUDES) $(DEFINES)
 
 # Test link flags.
-LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(PORTLIBS_PATH)/wii/lib -lSDL_ttf -lSDL `freetype-config --libs` -lfat -lwiiuse -lbte -logc -lm
+LDFLAGS			:= $(COMMON_FLAGS) -L$(LIB_DIR) -L$(LIBOGC_LIB) -L$(PORTLIBS_PATH)/wii/lib -lSDL_ttf -lSDL -lfat -lwiiuse -lbte -logc -lm $(FREETYPE_LIBS)
 
 # How to link an ELF.
 $(TEST_OBJ_DIR)/%.elf: $(TEST_OBJ_DIR)/%.o $(LIB_DIR)/libSDL_ttf.a $(DEVKITPRO)/libSDL/lib/libSDL.a
