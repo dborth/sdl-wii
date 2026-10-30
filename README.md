@@ -12,7 +12,6 @@
 ---
 
 ## Port of SDL for the Nintendo Wii
-https://github.com/dborth/sdl-wii
 
 This port uses the devKitPro toolchain, available from:
 http://www.devkitpro.org
